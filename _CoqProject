@@ -1,0 +1,33 @@
+-Q theories blaze
+
+-arg "-w -redundant-canonical-projection -w -notation-incompatible-prefix -w -notation-both-format-and-spaces -w -unexpected-implicit-declaration"
+
+theories/stdpp_ext.v
+theories/syntax.v
+theories/notation.v
+theories/semantics.v
+theories/iris_instantiation.v
+theories/tactics.v
+theories/class_instances.v
+theories/lifting.v
+theories/state_rules.v
+theories/spec_rules.v
+theories/logic.v
+theories/adequacy.v
+theories/proofmode.v
+
+theories/examples/list_lib.v
+theories/examples/queue_lib.v
+theories/examples/lock_lib.v
+
+theories/examples/ask.v
+theories/examples/tick.v
+theories/examples/state.v
+theories/examples/countdown.v
+theories/examples/exception.v
+theories/examples/fork_1.v
+theories/examples/fork_2.v
+theories/examples/async_await.v
+theories/examples/divergence.v
+theories/examples/rand_lib.v
+theories/examples/non_determinism.v

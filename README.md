@@ -136,7 +136,8 @@ various examples studied throughout the paper.
 | `run_fork` (§5.1) | Definition `fork_handler` ([fork_2.v](/theories/examples/fork_2.v)) |
 | _"`runForkSpec` holds"_ (Fig. 6) | Theorem `fork_handler_spec` ([fork_2.v](/theories/examples/fork_2.v)) |
 | `Fork` (Fig. 8) | Definition `COOP` ([fork_1.v](/theories/examples/fork_1.v)) |
-| `queueInv` (Fig. 8) | Definition `preInv` ([fork_2.v](/theories/examples/fork_2.v)) |
+| `queueInv` (Fig. 8) | Definition `queue_inv` ([fork_2.v](/theories/examples/fork_2.v)) |
+| `ready` (Fig. 8) | Definition `ready` ([fork_2.v](/theories/examples/fork_2.v)) |
 | `run_coop₁` (Fig. 9) | Definition `run_coop₁` ([async_await.v](/theories/examples/async_await.v)) |
 | `run_coop₂` (Fig. 9) | Definition `run_coop₂` ([async_await.v](/theories/examples/async_await.v)) |
 | _"`run_coop₃ deadlock` diverges"_ (§5.1.3) | Lemma `main_diverges_toplevel_alt` ([divergence.v](/theories/examples/divergence.v)) |

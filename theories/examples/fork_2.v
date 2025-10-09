@@ -38,42 +38,71 @@ Section verification.
            queue_take s #()
       end%E.
 
-    Definition inv_type := list (option val * nat * ectx) -d> iProp Σ.
+    Definition inv_run_type :=
+      (list (val * nat * ectx) * list (val * nat * ectx)) -d> iPropO Σ.
 
-    Definition postInv : inv_type := (λ l,
-      is_queue s [] ∗
-      [∗ list] '(_, j, k) ∈ l, ∃ (v : val), j ⤇ fill k v
+    Definition ready_type :=
+      expr -d> expr -d> iPropO Σ.
+
+    Program Definition queue_inv_pre : ready_type -n> inv_run_type := (λne ready, λ l,
+      (* Queue ownership: *)
+      is_queue s l.1.*1.*1 ∗
+      (* Reduced spec. threads: *)
+      ([∗ list] args ∈ l.2,
+         let j := args.1.2 in
+         let k := args.2 in
+         ∃ (v : val), j ⤇ fill k v
+      ) ∗
+      (* Running impl. fibers: *)
+      ([∗ list] args ∈ l.1,
+         let k1 := args.1.1 in
+         let j := args.1.2 in
+         let k := args.2 in
+         ∃ (e2 : expr), j ⤇ fill k e2 ∗
+         ready ((Val k1) #()) e2
+      )
     )%I.
-
-    Definition preInv_pre : inv_type → inv_type := (λ preInv l,
-      let k1s : list val := omap id l.*1.*1 in
-      is_queue s k1s ∗
-      [∗ list] '(k1_opt, j, k) ∈ l,
-        match k1_opt with
-        | None =>
-            ∃ (v : val), j ⤇ fill k v
-        | Some k1 =>
-            ∃ (e2 : expr),
-            j ⤇ fill k e2 ∗
-            ∀ l,
-            ▷ preInv l -∗
-            BREL Val k1 #() ≤ e2 <|[([fork], [], iThyBot)]|> {{ _; _, postInv l }}
-        end
-    )%I.
-
-    Local Instance preInv_pre_contractive : Contractive preInv_pre.
-    Proof.
-      rewrite /preInv_pre => n preInv preInv' Hdist l //=.
-      repeat (f_contractive || f_equiv). by apply (Hdist a1).
+    Next Obligation.
+      repeat intros ?; repeat (f_equiv || simpl). by apply (H0 _ _).
     Qed.
 
-    Definition preInv_def := fixpoint preInv_pre.
-    Definition preInv_aux : seal preInv_def. Proof. by eexists. Qed.
-    Definition preInv := preInv_aux.(unseal).
+    Definition postInv : inv_run_type := (λ l,
+      is_queue s [] ∗
+      [∗ list] args ∈ l.1 ++ l.2,
+      let j := args.1.2 in
+      let k := args.2 in
+      ∃ (v : val), j ⤇ fill k v
+    )%I.
 
-    Definition preInv_eq : preInv = preInv_def := preInv_aux.(seal_eq).
-    Global Lemma preInv_unfold l : preInv l ≡ preInv_pre preInv l.
-    Proof. rewrite preInv_eq /preInv_def. apply (fixpoint_unfold preInv_pre l). Qed.
+    Definition ready_pre : ready_type → ready_type :=
+    (λ ready e1 e2,
+      ∀ l,
+      ▷ queue_inv_pre ready l -∗
+      BREL e1 ≤ e2 <|[([fork], [], iThyBot)]|> {{ _; _, postInv l }}
+    )%I.
+
+    Local Instance ready_pre_contractive : Contractive ready_pre.
+    Proof.
+      rewrite /ready_pre => n ready ready' Hdist e1 e2 //=.
+      repeat (f_contractive || f_equiv). by apply (Hdist _ _).
+    Qed.
+
+    Definition ready_def := fixpoint ready_pre.
+    Definition ready_aux : seal ready_def.
+    Proof. by eexists. Qed.
+
+    (* Definition of [ready]. *)
+    Definition ready := ready_aux.(unseal).
+
+    Definition ready_eq : ready = ready_def := ready_aux.(seal_eq).
+    Global Lemma ready_unfold e1 e2 :
+      ready e1 e2 ≡ ready_pre ready e1 e2.
+    Proof.
+      rewrite ready_eq /ready_def.
+      apply (fixpoint_unfold ready_pre e1 e2).
+    Qed.
+
+    Definition queue_inv := queue_inv_pre ready.
 
     Lemma find_kont_pos (l : list (option val * nat * ectx)) k1 k1s :
       omap id l.*1.*1 = k1s ++ [k1] →
@@ -139,71 +168,9 @@ Section verification.
       by destruct (app_inj_tail _ _ _ _ Heq) as [-> _].
     Qed.
 
-    Lemma exploit_preInv l k1 k1s :
-      omap id l.*1.*1 = k1s ++ [k1] →
-      ([∗ list] pat ∈ l,
-        match pat with
-        | (None, j, k) =>
-            ∃ (v : val), j ⤇ fill k v
-        | (Some k1, j, k) =>
-            ∃ (e2 : expr),
-            j ⤇ fill k e2 ∗
-            ∀ l,
-            ▷ preInv l -∗
-            BREL Val k1 #() ≤ e2 <|[([fork], [], iThyBot)]|> {{ _; _, postInv l }}
-        end
-      ) -∗
-      is_queue s k1s -∗
-      ∃ l' j k (e2 : expr),
-      j ⤇ fill k e2 ∗
-      BREL Val k1 #() ≤ e2 <|[([fork], [], iThyBot)]|> {{ _; _, postInv l' }} ∗
-      □ (∀ (v : val), postInv l' -∗ j ⤇ fill k v -∗ postInv l).
-    Proof.
-      iIntros (Heq) "Hl Hs".
-      destruct (find_kont_pos _ _ _ Heq) as
-        [p [q [j [k (-> & Hp & Hq)]]]].
-      rewrite big_sepL_app //=.
-      iDestruct "Hl" as "(Hp & [%e2 [Hj Hk1]] & Hq)".
-      iExists (p ++ q), j, k, e2. iFrame.
-      iSplitL.
-      { iApply "Hk1". iNext.
-        rewrite preInv_unfold /preInv_pre //=.
-        rewrite !fmap_app !omap_app Hp Hq big_sepL_app app_nil_r //=.
-        by iFrame.
-      }
-      { iIntros "!> %v [Hs Hpq] Hj". iFrame.
-        rewrite big_sepL_app. by iFrame.
-      }
-    Qed.
-
-    Lemma establish_postInv l :
-      omap id l.*1.*1 = [] →
-      ([∗ list] pat ∈ l,
-        match pat with
-        | (None, j, k) =>
-            ∃ (v : val), j ⤇ fill k v
-        | (Some k1, j, k) =>
-            ∃ (e2 : expr),
-            j ⤇ fill k e2 ∗
-            ∀ l,
-            ▷ preInv l -∗
-            BREL Val k1 #() ≤ e2 <|[([fork], [], iThyBot)]|> {{ _; _, postInv l }}
-        end
-      ) -∗
-      is_queue s [] -∗
-      postInv l.
-    Proof.
-      iIntros (?) "Hl Hs". iFrame.
-      iInduction l as [|((k1_opt, j), k) l] "IH"; [done|].
-      destruct k1_opt =>//. simpl. iFrame.
-      iDestruct "Hl" as "[$ Hl]".
-      iApply ("IH" with "[] Hl").
-      by simpl in *.
-    Qed.
-
     Lemma run_refines (e1 e2 : expr) l :
       BREL e1 ≤ e2 <|[(([fork], [], COOP fork))]|> {{ _; _, True }} -∗
-      preInv l -∗
+      queue_inv l -∗
       BREL fork_handler e1 ≤ e2 <|[(([fork], [], iThyBot))]|> {{ _; _, postInv l }}.
     Proof.
       iIntros "Hbrel".
@@ -212,34 +179,38 @@ Section verification.
       iApply (brel_exhaustion' OS with "Hbrel"); try done. iSplit.
       - iIntros (??) "_".
         brel_pures_l.
-        rewrite preInv_unfold.
-        iDestruct "HpreInv" as "[Hqueue Hl]".
+        rewrite /queue_inv.
+        iDestruct "HpreInv" as "[Hqueue [Hl2 Hl1]]".
         iApply (queue_empty_spec with "Hqueue").
         iIntros "!>  Hqueue".
-        case_eq (reverse (omap id l.*1.*1)); [|intros k1 k1s]; intros Heq.
+        case_eq (reverse l.1); [|intros ((k1, j), k) l1s]; intros Heq.
         + specialize (reverse_eq_nil _ Heq) as Heq'.
-          rewrite Heq'.
-          brel_pures_l.
-          by iApply (establish_postInv with "Hl Hqueue").
+          rewrite Heq' //=. simpl.
+          brel_pures_l. iModIntro. iFrame. by rewrite Heq' //=.
         + specialize (f_equal reverse Heq) as Heq'.
           rewrite reverse_involutive reverse_cons in Heq'.
-          rewrite Heq' length_app Nat.add_1_r //=.
+          rewrite Heq' length_fmap length_fmap length_app Nat.add_1_r.
+          rewrite fmap_app fmap_app //=.
           brel_pures_l.
           iApply (queue_take_spec with "Hqueue").
           iIntros "!> Hqueue".
-          iDestruct (exploit_preInv with "Hl Hqueue") as "H"; first done.
-          iDestruct "H" as "[%l' [%j [%k [%e2' (Hj & Hk1 & #Hpost)]]]]".
+          rewrite big_sepL_app //=.
+          iDestruct "Hl1" as "[Hl1 [[%e' [Hj Hk1]] _]]".
+          rewrite ready_unfold /ready_pre.
+          iSpecialize ("Hk1" $! (reverse l1s, l.2) with "[$]").
           iApply (brel_logical_fork with "Hj [Hk1]").
-          { simpl. by iApply "Hk1". }
-          iIntros (??) "Hl' Hj". iApply brel_value.
-          by iApply ("Hpost" with "Hl' Hj").
+          { by iApply "Hk1". }
+          iIntros (??) "[Hqueue Hl'] Hj". iApply brel_value.
+          iFrame. simpl. rewrite Heq'.
+          rewrite !big_sepL_app //=.
+          iDestruct "Hl'" as "[Hl1 Hl2]". by iFrame.
       - clear e1 e2.
         iIntros "%k1 %k2 %e1 %e2 %Q %Hk1 %Hk2 HCOOP Hk".
         rewrite COOP_unfold /COOP_pre //=.
         iDestruct "HCOOP" as "[%task1 [%task2 (->& -> & Hbrel & HQ)]]".
         brel_pures_l. { by apply neutral_ectx; set_solver. }
         iSpecialize ("Hk" with "HQ").
-        rewrite preInv_unfold.
+        rewrite /queue_inv.
         iDestruct "HpreInv" as "[Hqueue Hl]".
         iApply (queue_add_spec with "Hqueue").
         iIntros "!> Hqueue". brel_pures_l.
@@ -249,17 +220,18 @@ Section verification.
         iIntros (j k) "Hj". simpl.
         unfold run.
         brel_pures_l.
-        iApply (brel_wand' _ _ _ (λ _ _, postInv ((Some _, j, k) :: l))%I).
+        iApply (brel_wand' _ _ _ (λ _ _, postInv ((_, j, k) :: l.1, l.2))%I).
         { iIntros "!> _ _ [Hs Hl]". simpl.
           iDestruct "Hl" as "[[%v Hj] Hl]".
           iExists v. by iFrame.
         }
         iApply ("IH" with "Hbrel").
-        rewrite preInv_unfold /preInv_pre.
-        simpl. iFrame.
-        clear l. iIntros (l) "HpreInv".
+        rewrite /queue_inv.
+        simpl. iFrame. iDestruct "Hl" as "[??]". iFrame.
+        rewrite ready_unfold /ready_pre.
+        iIntros (l') "Hqueue_inv".
         brel_pures_l.
-        by iApply ("IH" with "Hk HpreInv").
+        by iApply ("IH" with "Hk Hqueue_inv").
     Qed.
 
   End handler_refinement.
@@ -311,9 +283,8 @@ Section verification.
     iApply brel_new_theory.
     iApply (brel_add_label_l with "Hfork").
 
-    iApply (brel_wand' _ _ _ (λ _ _, postInv s [])%I); first auto.
-    iApply (run_refines with "[Hmain]"); last
-    by rewrite preInv_unfold /preInv_pre; auto.
+    iApply (brel_wand' _ _ _ (λ _ _, postInv s ([], []))%I); first auto.
+    iApply (run_refines with "[Hmain]"); last by iFrame; auto.
 
     iApply "Hmain".
     iIntros "!> %task1 %task2 Htask".

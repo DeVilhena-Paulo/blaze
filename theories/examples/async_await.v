@@ -170,10 +170,12 @@ Section predicates.
        ∀ y1 y2 l.
        □ Φ y1 y2 -∗
        ▷ promiseInv q -∗
-       pre_run q l -∗
-       (k1 y1) ≼ (k2 y2) <[(([coop], [await]), iThyBot)]> (λ _ _, post_run q l)
+       queue_inv q l -∗
+       (k1 y1) ≼ (k2 y2) <[(([coop], [await]), iThyBot)]> (λ _ _,
+         queue_inv q ([], l.1 ++ l2.)
+       )
 
-    pre_run q l ≜
+    queue_inv q l ≜
       let k1s = l.1.*1 in
       is_queue s k1s ∗
       ([∗ list] '(_ , j, k) ∈ l.2, ∃ (v : val), j ⤇ fill k v) ∗
@@ -183,12 +185,11 @@ Section predicates.
          ∀ l,
          ▷ promiseInv q -∗
          ▷ pre_run q l -∗
-         (k1 #()) ≼ e2 <[(([coop], [await]), iThyBot)]> (λ _ _, post_run q l)
+         (k1 #()) ≼ e2 <[(([coop], [await]), iThyBot)]> (λ _ _,
+           queue_inv q ([], l.1 ++ l.2)
+         )
       )
 
-    post_run q l ≜
-      is_queue s [] ∗
-      [∗ list] '(_, j, k) ∈ l, ∃ (v : val), j ⤇ fill k v
   *)
 
   (* Unique token [τ]. *)
@@ -227,8 +228,8 @@ Section predicates.
     repeat intros ?. repeat f_equiv. by apply (H x0).
   Qed.
 
-  (* [pre_run]'s pre-fixpoint. *)
-  Program Definition pre_run_pre : ready_type -n> inv_run_type :=
+  (* [queue_inv]'s pre-fixpoint. *)
+  Program Definition queue_inv_pre : ready_type -n> inv_run_type :=
   (λne ready, λ q l,
     (* Queue ownership: *)
     is_queue q l.1.*1.*1 ∗
@@ -252,13 +253,6 @@ Section predicates.
   Next Obligation.
     repeat intros ?; repeat (f_equiv || simpl). by apply (H x0).
   Qed.
-
-  (* Definition of [post_run]. *)
-  Definition post_run : inv_run_type :=
-  (λ q l,
-    is_queue q [] ∗
-    [∗ list] '(_ , j, k) ∈ l.1 ++ l.2, ∃ (v : val), j ⤇ fill k v
-  )%I.
 
   (* [promiseInv]'s pre-fixpoint. *)
   Program Definition promiseInv_pre : ready_type -n> promiseInv_type :=
@@ -289,8 +283,10 @@ Section predicates.
   (λ ready q e1 e2,
     ∀ l,
     ▷ promiseInv_pre ready q -∗
-    ▷ pre_run_pre ready q l -∗
-    BREL e1 ≤ e2 <| [(([coop], [await]), iThyBot)] |> {{ _; _, post_run q l }}
+    ▷ queue_inv_pre ready q l -∗
+    BREL e1 ≤ e2 <| [(([coop], [await]), iThyBot)] |> {{ _; _,
+      queue_inv_pre ready q ([], l.1 ++ l.2)
+    }}
   )%I.
 
   Local Instance ready_pre_contractive coop await :
@@ -324,8 +320,8 @@ Section predicates.
   (* Definition of [waiting]. *)
   Definition waiting coop await := waiting_pre (ready coop await).
 
-  (* Definition of [pre_run]. *)
-  Definition pre_run coop await := pre_run_pre (ready coop await).
+  (* Definition of [queue_inv]. *)
+  Definition queue_inv coop await := queue_inv_pre (ready coop await).
 
   (* Definition of [promiseInv]. *)
   Definition promiseInv coop await := promiseInv_pre (ready coop await).
@@ -617,16 +613,16 @@ Section verification.
 
     Lemma next_refines (coop await : label) (q v : val) l' l :
       promiseInv coop await q -∗
-      pre_run coop await q (l' ++ l.1, l.2) -∗
-      BREL next_tmpl q ≤ v <| [([coop], [await], iThyBot)] |> {{ _; _, post_run q l }}.
+      queue_inv coop await q (l' ++ l.1, l.2) -∗
+      BREL next_tmpl q ≤ v <| [([coop], [await], iThyBot)] |> {{ _; _,
+        queue_inv coop await q ([], l.1 ++ l.2)
+      }}.
     Proof.
       iIntros "HInv (Hq & Hl2 & Hl1)". rewrite /next_tmpl //=.
       iApply (queue_empty_spec with "Hq"). iIntros "!> Hq".
       destruct (rev_case (l' ++ l.1)) as [Heq|[l'' [((k1', j'), k') Heq]]].
       - rewrite Heq //=. brel_pures_l. iModIntro. iFrame.
-        destruct (app_eq_nil _ _ Heq) as [-> ->].
-        iApply (big_sepL_mono with "Hl2").
-        by intros ? ((k1', j), k') _; auto.
+        by destruct (app_eq_nil _ _ Heq) as [-> ->]; simpl.
       - rewrite Heq !fmap_app.
         rewrite length_app length_cons length_nil Nat.add_1_r.
         brel_pure_l.
@@ -641,7 +637,7 @@ Section verification.
         { simpl. by iApply "Hk1'". }
         iIntros (??) "[Hq Hl] Hj". iApply brel_value.
         iFrame. rewrite !big_sepL_app //=.
-        iDestruct "Hl" as "[Hl $]".
+        iDestruct "Hl" as "[[Hl Hl2] $]". iFrame.
         destruct (rev_case l.1) as [->|[t [((k1, j), k) Ht]]]; first done.
         rewrite Ht.
         rewrite Ht app_assoc //= in Heq.
@@ -699,7 +695,7 @@ Section verification.
           set I : list (val * val) → list (val * val) → iProp Σ := (λ _k12s_l k12s_r,
             R ∗
             ∃ l',
-            pre_run_pre (ready coop await) q (l' ++ l.1, l.2) ∗
+            queue_inv_pre (ready coop await) q (l' ++ l.1, l.2) ∗
             [∗ list] args ∈ k12s_r, waiting coop await q Φ args.1 args.2
           )%I.
           iApply (brel_list_iter I with "[] [Hpre_run Hk12s Hpi Hps1 Hps2 Hτ Hclose]");
@@ -723,7 +719,9 @@ Section verification.
         iApply (brel_store_l with "Hpi"). iIntros "!> Hpi". brel_pures_l.
         iDestruct ("Hclose" with "[Hpi Hps1 Hps2 Hτ]") as "HInv".
         { iLeft. by iFrame. }
-        iApply (next_refines with "HInv"). by iFrame.
+        iApply (brel_wand with "[Hq Hl2 Hl1 HInv]").
+        { iApply (next_refines _ _ _ _ l' l with "HInv"). by iFrame. }
+        by auto.
 
       (* Effect case. *)
       - clear e1 e2.
@@ -779,7 +777,7 @@ Section verification.
           do 3 brel_pure_l.
           iApply (brel_wand with "IH'").
           iIntros (??) "!> [Hq Hl']". simpl. iFrame.
-          iDestruct "Hl'" as "[[% Hj] Hl']". by iFrame.
+          iDestruct "Hl'" as "[[[% Hj] Hl'] _]". by iFrame.
         + brel_pure_l. { by apply neutral_ectx; set_solver. }
           iDestruct "Hmem'" as "[%τ' Hmem'']".
           iDestruct (lookup_promiseInv with "HpromiseInv Hmem''") as
@@ -818,7 +816,9 @@ Section verification.
               brel_pure_l. brel_pure_r.
               by iApply ("IH" with "Hτ Hmem Hk HInv Hl''").
             }
-            iApply (next_refines _ _ _ _ [] with "HInv"). by iFrame.
+            iApply (brel_wand with "[Hq Hl2 Hl1 HInv]").
+            { iApply (next_refines _ _ _ _ [] l with "HInv"). by iFrame. }
+            by auto.
     Qed.
 
   End handler_refinement.

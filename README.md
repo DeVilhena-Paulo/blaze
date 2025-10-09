@@ -73,10 +73,78 @@ various examples studied throughout the paper.
 
 ## Correspondence between paper and formalisation
 
-### Results
+### Refinements
 
-|                               | Paper                   | `Rocq` formalisation         |
-|-------------------------------|-------------------------|------------------------------|
+| Paper                   | `Rocq` formalisation                                                |
+|-------------------------|---------------------------------------------------------------------|
+| Refinement 2 (§2.1)     | Lemma `countdown_refines` ([countdown.v](/theories/examples/countdown.v)) |
+| Refinement 3 (§2.1)     | Lemma `run_st_passing_refines_run_heap` ([countdown.v](/theories/examples/countdown.v)) |
+| Refinement 6 (§2.2)     | Lemma `countdown_refines2` ([countdown.v](/theories/examples/countdown.v)) |
+| Refinement 7 (§2.2)     | Lemma `run_st_passing_refines_run_spec` ([countdown.v](/theories/examples/countdown.v)) |
+| Refinement 11 (§4.2)     | Lemma `run_ask_refines` ([ask.v](/theories/examples/ask.v)) |
+
+### Language
+
+| Paper                   | `Rocq` formalisation                                                |
+|-------------------------|---------------------------------------------------------------------|
+| Syntax (Fig. 1.a)       | Types `expr`, `val`, `frame`, and `ectx` ([syntax.v](/theories/syntax.v)) |
+| Operational rules (Fig. 1.b) | Relations `base_step` and `prim_step` ([semantics.v](/theories/semantics.v)) |
+| Pure-reduction rules (Fig. 1.c) | Relation `pure_base_step` ([iris_instantiation.v](/theories/iris_instantiation.v)) |
+
+### Model
+
+| Paper                   | `Rocq` formalisation                                                |
+|-------------------------|---------------------------------------------------------------------|
+| Model of `baze` (Fig. 2) | Definitions in section `ewp` ([logic.v](/theories/logic.v)) |
+| Model of `blaze` (Fig. 4) | Definitions in section `bewp` ([logic.v](/theories/logic.v)) |
+
+### Rules
+
+| Paper                   | `Rocq` formalisation                                                |
+|-------------------------|---------------------------------------------------------------------|
+| Rule `Value` (Fig. 3) | Lemma `ewp_value` ([logic.v](/theories/logic.v)) |
+| Rule `Introduction` (Fig. 3) | Lemma `ewp_introduction` ([logic.v](/theories/logic.v)) |
+| Rule `Bind` (Fig. 3) | Lemma `ewp_bind` ([logic.v](/theories/logic.v)) |
+| Rule `Exhaustion` (Fig. 3) | Lemma `ewp_exhaustion` ([logic.v](/theories/logic.v)) |
+| Rule `Monotonicity` (Fig. 3) | Lemma `ewp_wand'` ([logic.v](/theories/logic.v)) |
+| Rule `Step-L` (Fig. 3) | Lemma `ewp_pure_step_l` ([logic.v](/theories/logic.v)) |
+| Rule `Step-R` (Fig. 3) | Lemma `ewp_pure_step_r` ([logic.v](/theories/logic.v)) |
+| Rule `Effect-L-★` (Fig. 5) | Lemma `bewp_effect_l` ([logic.v](/theories/logic.v)) |
+| Rule `Effect-R-★` (Fig. 5) | Lemma `bewp_effect_r` ([logic.v](/theories/logic.v)) |
+| Rule `Add-Label-L-★` (Fig. 5) | Lemma `bewp_add_label_l` ([logic.v](/theories/logic.v)) |
+| Rule `Add-Label-R-★` (Fig. 5) | Lemma `bewp_add_label_r` ([logic.v](/theories/logic.v)) |
+| Rule `New-Theory-★` (Fig. 5) | Lemma `bewp_new_theory` ([logic.v](/theories/logic.v)) |
+| Rule `Introduction-★` (Fig. 5) | Lemma `bewp_introduction` ([logic.v](/theories/logic.v)) |
+| Rule `Exhaustion-★` (Fig. 5) | Lemma `bewp_exhaustion` ([logic.v](/theories/logic.v)) |
+| Rule `Bind-★` (Fig. 5) | Lemma `bewp_bind''` ([logic.v](/theories/logic.v)) |
+| Rule `Gen-Monotonicity` | Lemma `ewp_mono` ([logic.v](/theories/logic.v)) |
+| Rule `Fork-L-★` | Lemma `bewp_fork_l` ([logic.v](/theories/logic.v)) |
+| Rule `Fork-R-★` | Lemma `bewp_fork_r` ([logic.v](/theories/logic.v)) |
+| Rule `Logical-Fork-★` | Lemma `bewp_logical_fork` ([logic.v](/theories/logic.v)) |
+| Rule `Thread-Swap-★` | Lemma `bewp_thread_swap` ([logic.v](/theories/logic.v)) |
+
+### Adequacy
+
+| Paper                   | `Rocq` formalisation                                                |
+|-------------------------|---------------------------------------------------------------------|
+| Theorem 4.1 (§4.4) | Theorem `ewp_adequacy` ([adequacy.v](/theories/adequacy.v)) |
+
+### Case studies
+
+| Paper                   | `Rocq` formalisation                                                |
+|-------------------------|---------------------------------------------------------------------|
+| `run_fork` (§5.1) | Definition `fork_handler` ([fork_2.v](/theories/examples/fork_2.v)) |
+| _"`runForkSpec` holds"_ (Fig. 6) | Theorem `fork_handler_spec` ([fork_2.v](/theories/examples/fork_2.v)) |
+| `Fork` (Fig. 8) | Definition `COOP` ([fork_1.v](/theories/examples/fork_1.v)) |
+| `queueInv` (Fig. 8) | Definition `preInv` ([fork_2.v](/theories/examples/fork_2.v)) |
+| `run_coop₁` (Fig. 9) | Definition `run_coop₁` ([async_await.v](/theories/examples/async_await.v)) |
+| `run_coop₂` (Fig. 9) | Definition `run_coop₂` ([async_await.v](/theories/examples/async_await.v)) |
+| _"`run_coop₃ deadlock` diverges"_ (§5.1.3) | Lemma `main_diverges_toplevel_alt` ([divergence.v](/theories/examples/divergence.v)) |
+| _"`run_coop₁ deadlock` terminates"_ (§5.1.3) | Execution of [termination.ml](/src/termination.ml) |
+| `Nd` | Definition `Nd` ([non_determinism.v](/theories/non_determinism.v)) |
+| _"`runNdCorrect(run_nd_pure)` holds"_ | Lemma `ndet_run_pure_correct` ([non_determinism.v](/theories/non_determinism.v)) |
+| _"`runNdCorrect(run_nd_rand)` holds"_ | Lemma `ndet_run_rand_correct` ([non_determinism.v](/theories/non_determinism.v)) |
+
 
 ### Notation
 

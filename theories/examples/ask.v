@@ -33,7 +33,7 @@ Section verification.
       (⌜ e1 = do: ask #() ⌝%E ∗ ⌜ e2 = #x ⌝ ∗ □ Q #x #x)%I.
   Next Obligation. solve_proper. Qed.
 
-  Lemma run_spec_handler_refines (ask : label) (x : Z) L R e1 e2 :
+  Lemma run_ask_handler_refines (ask : label) (x : Z) L R e1 e2 :
     BEWP e1 ≤ e2 <|([ask], [], AskT ask x) :: L|> {{R}} -∗
     BEWP run_ask_handler ask e1 #x ≤ e2 <|([ask], [], iThyBot) :: L|> {{R}}.
   Proof.
@@ -46,7 +46,7 @@ Section verification.
     iApply "IH". by iApply "Hk".
   Qed.
 
-  Lemma run_spec_refines (main1 main2 : val) (x : Z) L R :
+  Lemma run_ask_refines (main1 main2 : val) (x : Z) L R :
     (∀ (ask1 ask2 : val) M,
       □ BEWP ask1 #() ≤ ask2 #() <|M|> {{both_int x}} -∗
       BEWP main1 ask1 ≤ main2 ask2 <|M ++ L|> {{R}}
@@ -58,7 +58,7 @@ Section verification.
     iApply bewp_new_theory.
     iApply bewp_effect_l. iIntros "!> %ask Hask !>".
     iApply (bewp_add_label_l with "Hask"). bewp_pures_l.
-    iApply run_spec_handler_refines.
+    iApply run_ask_handler_refines.
     iApply ("Hmain" $! _ _ [([ask], [], AskT ask x)]).
     iIntros "!>". bewp_pures_l. bewp_pures_r.
     iApply bewp_introduction'. { apply elem_of_cons. by left. }

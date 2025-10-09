@@ -13,7 +13,7 @@ Set Default Proof Using "Type".
 (* ========================================================================== *)
 (** * Syntax. *)
 
-Section eff_lang.
+Section lambda_blaze.
 
   Record label := Label { label_car : nat }.
 
@@ -139,7 +139,7 @@ Section eff_lang.
     heap : gmap loc (option val)
   }.
 
-End eff_lang.
+End lambda_blaze.
 
 
 (* ========================================================================== *)

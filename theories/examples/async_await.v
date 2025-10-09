@@ -290,7 +290,7 @@ Section predicates.
     ∀ l,
     ▷ promiseInv_pre ready q -∗
     ▷ pre_run_pre ready q l -∗
-    BEWP e1 ≤ e2 <| [(([coop], [await]), iThyBot)] |> {{ _; _, post_run q l }}
+    BREL e1 ≤ e2 <| [(([coop], [await]), iThyBot)] |> {{ _; _, post_run q l }}
   )%I.
 
   Local Instance ready_pre_contractive coop await :
@@ -563,7 +563,7 @@ Section theory.
     ∃ (task1 task2 : val) Φ,
     ⌜ e1 = (do: coop (InjLV task1))%E ⌝ ∗
     ⌜ e2 = (async_specV await task2)%E ⌝ ∗
-    ▷ BEWP task1 #() ≤ task2 #() <| [(([coop], [await]), COOP)] |> {{ y1; y2, □ Φ y1 y2 }} ∗
+    ▷ BREL task1 #() ≤ task2 #() <| [(([coop], [await]), COOP)] |> {{ y1; y2, □ Φ y1 y2 }} ∗
     □ ∀ (pi : loc) (ps : loc * loc), isPromise pi ps Φ -∗ Q #pi (#ps.1, #ps.2)%V
   )%I.
   Next Obligation. solve_proper. Qed.
@@ -618,18 +618,18 @@ Section verification.
     Lemma next_refines (coop await : label) (q v : val) l' l :
       promiseInv coop await q -∗
       pre_run coop await q (l' ++ l.1, l.2) -∗
-      BEWP next_tmpl q ≤ v <| [([coop], [await], iThyBot)] |> {{ _; _, post_run q l }}.
+      BREL next_tmpl q ≤ v <| [([coop], [await], iThyBot)] |> {{ _; _, post_run q l }}.
     Proof.
       iIntros "HInv (Hq & Hl2 & Hl1)". rewrite /next_tmpl //=.
       iApply (queue_empty_spec with "Hq"). iIntros "!> Hq".
       destruct (rev_case (l' ++ l.1)) as [Heq|[l'' [((k1', j'), k') Heq]]].
-      - rewrite Heq //=. bewp_pures_l. iModIntro. iFrame.
+      - rewrite Heq //=. brel_pures_l. iModIntro. iFrame.
         destruct (app_eq_nil _ _ Heq) as [-> ->].
         iApply (big_sepL_mono with "Hl2").
         by intros ? ((k1', j), k') _; auto.
       - rewrite Heq !fmap_app.
         rewrite length_app length_cons length_nil Nat.add_1_r.
-        bewp_pure_l.
+        brel_pure_l.
         iApply (queue_take_spec with "Hq"). iIntros "!> Hq".
         rewrite big_sepL_app.
         iDestruct "Hl1" as "[Hl1 [Hk1' _]]".
@@ -637,9 +637,9 @@ Section verification.
         rewrite ready_unfold /ready_pre.
         iSpecialize ("Hk1'" $! (l'', l.2) with "HInv [Hq Hl1 Hl2]").
         { iNext. by iFrame. }
-        iApply (bewp_logical_fork with "Hj [Hk1']").
+        iApply (brel_logical_fork with "Hj [Hk1']").
         { simpl. by iApply "Hk1'". }
-        iIntros (??) "[Hq Hl] Hj". iApply bewp_value.
+        iIntros (??) "[Hq Hl] Hj". iApply brel_value.
         iFrame. rewrite !big_sepL_app //=.
         iDestruct "Hl" as "[Hl $]".
         destruct (rev_case l.1) as [->|[t [((k1, j), k) Ht]]]; first done.
@@ -654,7 +654,7 @@ Section verification.
 
     Lemma run_refines (coop await : label) (q : val) pi ps τ Φ (e1 e2 : expr) :
       token τ -∗ isMember pi ps τ Φ -∗
-      BEWP e1 ≤ e2 <| [(([coop], [await]), COOP coop await)] |> {{ y1; y2, □ Φ y1 y2 }} -∗
+      BREL e1 ≤ e2 <| [(([coop], [await]), COOP coop await)] |> {{ y1; y2, □ Φ y1 y2 }} -∗
       ready coop await q
         (coop_handler coop q #pi e1)
         (await_handler_tmpl await (#ps.1, #ps.2)%V e2).
@@ -663,31 +663,31 @@ Section verification.
       iLöb as "IH" forall (pi ps τ Φ e1 e2).
       iIntros "Hτ #Hmem He12 %l HpromiseInv Hpre_run".
       rewrite {-1}/coop_handler /coop_handler_tmpl {-1}/await_handler_tmpl.
-      iApply (bewp_exhaustion' OS with "He12"); try done. iSplit.
+      iApply (brel_exhaustion' OS with "He12"); try done. iSplit.
 
       (* Value case. *)
       - iIntros (??) "#HΦ".
-        bewp_pure_l.
+        brel_pure_l.
         iDestruct (lookup_promiseInv with "HpromiseInv Hmem") as
           "[Hclose HpromiseSt]".
-        bewp_pures_l.
-        bewp_pures_r.
+        brel_pures_l.
+        brel_pures_r.
         iDestruct "HpromiseSt" as
           "[[%y1 [%y2 (_&Hτ'&Hpi&_)]]|[%k12s (Hpi&Hps1&Hps2&Hk12s)]]"; first
         by iDestruct (claim_uniqueness with "[Hτ Hτ']") as "Habsurd"; iFrame.
-        iApply (bewp_load_l with "Hpi"). iIntros "!> Hpi".
-        iApply (bewp_acquire_r with "Hps1"). iIntros "Hps1".
-        bewp_pures_r.
-        iApply (bewp_load_r with "Hps2"). iIntros "Hps2".
-        bewp_pures_l.
-        bewp_pures_r.
-        iApply (bewp_store_r with "Hps2"). iIntros "Hps2". bewp_pures_r.
-        iApply (bewp_release_r with "Hps1"). iIntros "Hps1". bewp_pures_r.
-        iApply (bewp_bind' [_] []).
+        iApply (brel_load_l with "Hpi"). iIntros "!> Hpi".
+        iApply (brel_acquire_r with "Hps1"). iIntros "Hps1".
+        brel_pures_r.
+        iApply (brel_load_r with "Hps2"). iIntros "Hps2".
+        brel_pures_l.
+        brel_pures_r.
+        iApply (brel_store_r with "Hps2"). iIntros "Hps2". brel_pures_r.
+        iApply (brel_release_r with "Hps1"). iIntros "Hps1". brel_pures_r.
+        iApply (brel_bind' [_] []).
         { by iApply (traversable_to_iThy_bot [([coop], [await], iThyBot)]). }
 
         (* List iteration. *)
-        iApply (bewp_wand with "[Hpre_run Hk12s Hpi Hps1 Hps2 Hτ Hclose]").
+        iApply (brel_wand with "[Hpre_run Hk12s Hpi Hps1 Hps2 Hτ Hclose]").
         { iClear "IH".
           (* framed resources: *)
           set R : iProp Σ := (
@@ -702,25 +702,25 @@ Section verification.
             pre_run_pre (ready coop await) q (l' ++ l.1, l.2) ∗
             [∗ list] args ∈ k12s_r, waiting coop await q Φ args.1 args.2
           )%I.
-          iApply (bewp_list_iter I with "[] [Hpre_run Hk12s Hpi Hps1 Hps2 Hτ Hclose]");
+          iApply (brel_list_iter I with "[] [Hpre_run Hk12s Hpi Hps1 Hps2 Hτ Hclose]");
           last by (iFrame; iExists []; iFrame).
           iIntros "!> %k12s_l %k1 %k2 %k12s_r".
           iIntros "[HR [%l' [[Hq [Hl2 Hl1]] [Hk12 Hk12s_r]]]]".
-          bewp_pures_r. iApply bewp_fork_r. iIntros (i) "Hi".
-          bewp_pures_l. iApply (queue_add_spec with "Hq"). iIntros "!> Hq".
-          iApply bewp_value. iSplitL "HR"; [by iFrame|].
+          brel_pures_r. iApply brel_fork_r. iIntros (i) "Hi".
+          brel_pures_l. iApply (queue_add_spec with "Hq"). iIntros "!> Hq".
+          iApply brel_value. iSplitL "HR"; [by iFrame|].
           iExists (((λ: <>, k1 v1)%V, i, []) :: l'). iFrame.
           rewrite !big_sepL_app. iDestruct "Hl1" as "[$ $]".
           iSpecialize ("Hk12" with "HΦ").
           rewrite !ready_unfold /ready_pre. clear l'.
-          iIntros (l') "HInv Hpre_run". simpl. bewp_pures_l.
+          iIntros (l') "HInv Hpre_run". simpl. brel_pures_l.
           by iApply ("Hk12" with "HInv Hpre_run").
         }
 
         iIntros "!>" (??) "[(Hτ & Hpi & Hps1 & Hps2 & Hclose)
           [%l' [[Hq [Hl2 Hl1]] _]]]".
-        bewp_pures_l.
-        iApply (bewp_store_l with "Hpi"). iIntros "!> Hpi". bewp_pures_l.
+        brel_pures_l.
+        iApply (brel_store_l with "Hpi"). iIntros "!> Hpi". brel_pures_l.
         iDestruct ("Hclose" with "[Hpi Hps1 Hps2 Hτ]") as "HInv".
         { iLeft. by iFrame. }
         iApply (next_refines with "HInv"). by iFrame.
@@ -732,21 +732,21 @@ Section verification.
         iDestruct "HCOOP" as
           "[[% [% [%Φ' (->&->&Htask&#HQ)]]]
            |[%pi' [%ps' [%Φ' (#Hmem'&->&->&#HQ)]]]]".
-        + bewp_pures_l. { by apply neutral_ectx; set_solver. }
+        + brel_pures_l. { by apply neutral_ectx; set_solver. }
           rewrite /(async_specV await).
-          bewp_pures_r. bewp_pures_r.
-          iApply bewp_alloc_r. iIntros (ps'2) "Hps'2".
+          brel_pures_r. brel_pures_r.
+          iApply brel_alloc_r. iIntros (ps'2) "Hps'2".
           rewrite fill_app.
-          iApply bewp_new_lock_r. iIntros (ps'1) "Hps'1".
+          iApply brel_new_lock_r. iIntros (ps'1) "Hps'1".
           rewrite fill_app.
-          bewp_pures_r. bewp_pures_r.
-          iApply bewp_fork_r. iIntros (i) "Hi".
-          iApply bewp_alloc_l. iIntros (pi') "!> Hpi' _". bewp_pures_l.
+          brel_pures_r. brel_pures_r.
+          iApply brel_fork_r. iIntros (i) "Hi".
+          iApply brel_alloc_l. iIntros (pi') "!> Hpi' _". brel_pures_l.
           iDestruct "Hpre_run" as "(Hq&Hl2&Hl1)".
           iApply (queue_add_spec with "Hq"). iIntros "!> Hq".
-          bewp_pures_l.
+          brel_pures_l.
           iDestruct "HpromiseInv" as "[%M [HM HInv]]".
-          iApply fupd_bewp.
+          iApply fupd_brel.
           iMod forge_token as "[%τ' Hτ']".
           iAssert (⌜ M !! ((pi', (ps'1, ps'2)), τ') = None⌝)%I with "[HInv Hpi']"
             as %Hlkp_None.
@@ -761,8 +761,8 @@ Section verification.
           iSpecialize ("HQ" with "[Hmem']"). { iExists τ'. by iFrame. }
           iSpecialize ("Hk" with "HQ"). iClear "HQ".
           iPoseProof ("IH" with "Hτ' Hmem' Htask") as "IH'".
-          do 2 bewp_pures_r.
-          iApply (bewp_thread_swap _ _ _ [] with "Hi"). iIntros (j k) "Hj".
+          do 2 brel_pures_r.
+          iApply (brel_thread_swap _ _ _ [] with "Hi"). iIntros (j k) "Hj".
           iSpecialize ("IH'" $! (((_, j, k) :: l.1), l.2)
             with "[HM HInv Hpi' Hps'1 Hps'2]").
           { iNext. iExists (<[_:=_]> M). iFrame.
@@ -771,42 +771,42 @@ Section verification.
           }
           iSpecialize ("IH'" with "[Hq Hl1 Hl2 Hj Hτ Hk]").
           { iNext. iFrame. rewrite ready_unfold /ready_pre.
-            iIntros (l') "HInv Hl'". simpl. bewp_pures_l.
+            iIntros (l') "HInv Hl'". simpl. brel_pures_l.
             by iApply ("IH" with "Hτ Hmem Hk HInv Hl'").
           }
           iClear "IH". simpl.
           rewrite /coop_run /coop_handler_tmpl.
-          do 3 bewp_pure_l.
-          iApply (bewp_wand with "IH'").
+          do 3 brel_pure_l.
+          iApply (brel_wand with "IH'").
           iIntros (??) "!> [Hq Hl']". simpl. iFrame.
           iDestruct "Hl'" as "[[% Hj] Hl']". by iFrame.
-        + bewp_pure_l. { by apply neutral_ectx; set_solver. }
+        + brel_pure_l. { by apply neutral_ectx; set_solver. }
           iDestruct "Hmem'" as "[%τ' Hmem'']".
           iDestruct (lookup_promiseInv with "HpromiseInv Hmem''") as
             "[Hclose HpromiseSt]".
-          bewp_pure_l.
+          brel_pure_l.
           iDestruct "HpromiseSt" as
             "[[%y1 [%y2 (#HΦ' & Hτ' & Hpi' & Hps'1 & Hps'2)]]
              |[%k12s (Hpi' & Hps'1 & Hps'2 & Hk12s)]]".
           * iSpecialize ("HQ" with "HΦ'").
             iSpecialize ("Hk" with "HQ"). iClear "HQ".
-            bewp_pures_l. rewrite /await_specV. bewp_pures_r.
+            brel_pures_l. rewrite /await_specV. brel_pures_r.
             { by apply neutral_ectx; set_solver. }
-            iApply (bewp_load_l with "Hpi'"). iIntros "!> Hpi'". bewp_pures_l.
-            iApply (bewp_acquire_r with "Hps'1"). iIntros "Hps'1". bewp_pures_r.
-            iApply (bewp_load_r with "Hps'2"). iIntros "Hps'2". bewp_pures_r.
-            iApply (bewp_release_r with "Hps'1"). iIntros "Hps'1". bewp_pures_r.
+            iApply (brel_load_l with "Hpi'"). iIntros "!> Hpi'". brel_pures_l.
+            iApply (brel_acquire_r with "Hps'1"). iIntros "Hps'1". brel_pures_r.
+            iApply (brel_load_r with "Hps'2"). iIntros "Hps'2". brel_pures_r.
+            iApply (brel_release_r with "Hps'1"). iIntros "Hps'1". brel_pures_r.
             iSpecialize ("Hclose" with "[Hpi' Hps'1 Hps'2 Hτ']").
             { iLeft. by iFrame. }
             by iApply ("IH" with "Hτ Hmem Hk Hclose Hpre_run").
-          * bewp_pures_l. rewrite /await_specV. bewp_pures_r.
+          * brel_pures_l. rewrite /await_specV. brel_pures_r.
             { by apply neutral_ectx; set_solver. }
-            iApply (bewp_load_l with "Hpi'"). iIntros "!> Hpi'". bewp_pures_l.
-            iApply (bewp_acquire_r with "Hps'1"). iIntros "Hps'1". bewp_pures_r.
-            iApply (bewp_load_r with "Hps'2"). iIntros "Hps'2". bewp_pures_r.
-            iApply (bewp_store_l with "Hpi'"). iIntros "!> Hpi'". bewp_pures_l.
-            iApply (bewp_store_r with "Hps'2"). iIntros "Hps'2".
-            iApply (bewp_release_r with "Hps'1"). iIntros "Hps'1".
+            iApply (brel_load_l with "Hpi'"). iIntros "!> Hpi'". brel_pures_l.
+            iApply (brel_acquire_r with "Hps'1"). iIntros "Hps'1". brel_pures_r.
+            iApply (brel_load_r with "Hps'2"). iIntros "Hps'2". brel_pures_r.
+            iApply (brel_store_l with "Hpi'"). iIntros "!> Hpi'". brel_pures_l.
+            iApply (brel_store_r with "Hps'2"). iIntros "Hps'2".
+            iApply (brel_release_r with "Hps'1"). iIntros "Hps'1".
             iDestruct "Hpre_run" as "[Hq [Hl2 Hl1]]".
             iDestruct ("Hclose" with "[Hpi' Hps'1 Hps'2 Hk12s Hτ Hk]") as "HInv".
             { iRight. iExists ((_, _) :: k12s). iFrame.
@@ -815,7 +815,7 @@ Section verification.
               iSpecialize ("Hk" with "HQ"). iClear "HQ".
               rewrite ready_unfold /ready_pre. iIntros (l'').
               iIntros "HInv Hl''".
-              bewp_pure_l. bewp_pure_r.
+              brel_pure_l. brel_pure_r.
               by iApply ("IH" with "Hτ Hmem Hk HInv Hl''").
             }
             iApply (next_refines _ _ _ _ [] with "HInv"). by iFrame.
@@ -896,13 +896,13 @@ Section closed_implementation_and_specification.
 
       is_promise_Persistent p₁ p₂ Φ : Persistent (is_promise p₁ p₂ Φ);
 
-      bewp_async (task₁ task₂ : val) Φ :
-        ▷ BEWP task₁ #() ≤ task₂ #() <|L|> {{v₁; v₂, □ Φ v₁ v₂}} -∗
-        BEWP async₁ task₁ ≤ async₂ task₂ <|L|> {{ p₁; p₂, is_promise p₁ p₂ Φ }};
+      brel_async (task₁ task₂ : val) Φ :
+        ▷ BREL task₁ #() ≤ task₂ #() <|L|> {{v₁; v₂, □ Φ v₁ v₂}} -∗
+        BREL async₁ task₁ ≤ async₂ task₂ <|L|> {{ p₁; p₂, is_promise p₁ p₂ Φ }};
 
-      bewp_await p₁ p₂ Φ :
+      brel_await p₁ p₂ Φ :
         is_promise p₁ p₂ Φ -∗
-        BEWP await₁ p₁ ≤ await₂ p₂ <|L|> {{v₁; v₂, □ Φ v₁ v₂ }};
+        BREL await₁ p₁ ≤ await₂ p₂ <|L|> {{v₁; v₂, □ Φ v₁ v₂ }};
     }.
 
   End specification.
@@ -935,26 +935,26 @@ Section closed_implementation_and_specification.
 
     }.
 
-    (* bewp_async. *)
+    (* brel_async. *)
     Next Obligation.
       iIntros (??????) "Htask".
-      rewrite /async_implV. do 2 bewp_pure_l.
-      iApply bewp_introduction'. { by apply elem_of_list_singleton. }
+      rewrite /async_implV. do 2 brel_pure_l.
+      iApply brel_introduction'. { by apply elem_of_list_singleton. }
       iExists (do: coop_lbl (InjLV task₁))%E, (async_specV await_lbl task₂), [], [], _.
       iSplit; [done|]. iSplit; [iPureIntro; apply _|].
       iSplit; [done|]. iSplit; [iPureIntro; apply _|].
       iSplit; [|by iIntros "!> %% Hs"; simpl; iApply "Hs"].
       rewrite COOP_unfold. iLeft. iExists task₁, task₂, _.
       iSplit; [done|]. iSplit; [done|]. iFrame. iIntros "!> %% Hp".
-      iApply bewp_value. by eauto.
+      iApply brel_value. by eauto.
     Qed.
 
-    (* bewp_await. *)
+    (* brel_await. *)
     Next Obligation.
       iIntros (??????) "[%p₁' [%p₂' (-> & -> & #Hp)]]".
       destruct p₂' as (p₂_lock, p₂_status).
-      rewrite /await_implV. do 2 bewp_pure_l.
-      iApply bewp_introduction'. { by apply elem_of_list_singleton. }
+      rewrite /await_implV. do 2 brel_pure_l.
+      iApply brel_introduction'. { by apply elem_of_list_singleton. }
       iExists (do: coop_lbl (InjRV #p₁'))%E, (await_specV await_lbl _), [], [], _.
       iSplit; [done|]. iSplit; [iPureIntro; apply _|].
       iSplit; [done|]. iSplit; [iPureIntro; apply _|].
@@ -962,30 +962,30 @@ Section closed_implementation_and_specification.
       rewrite COOP_unfold. iRight. iExists p₁', (p₂_lock, p₂_status), _.
       iSplit; [iApply "Hp"|].
       iSplit; [done|]. iSplit; [done|]. iIntros "!> %% #HΦ".
-      by iApply bewp_value.
+      by iApply brel_value.
     Qed.
 
     Lemma run_refinement (main₁ main₂ : val) :
       (∀ async₁ async₂ await₁ await₂ L (H: CoopLibRelSpec async₁ async₂ await₁ await₂ L),
-       BEWP main₁ async₁ await₁ ≤ main₂ async₂ await₂ <|L|> {{_; _, True}}
+       BREL main₁ async₁ await₁ ≤ main₂ async₂ await₂ <|L|> {{_; _, True}}
       ) -∗
-      BEWP run_coop₁ main₁ ≤ run_coop₂ main₂ <|[]|> {{_; _, True}}.
+      BREL run_coop₁ main₁ ≤ run_coop₂ main₂ <|[]|> {{_; _, True}}.
     Proof.
       iIntros "Hmain". rewrite /run_coop₁ /run_coop₂.
-      bewp_pures_l. bewp_pures_r.
-      iApply bewp_effect_l. iIntros (coop_lbl) "!> Hcoop !>".
-      iApply bewp_effect_r. iIntros (await_lbl) "Hawait !>".
-      iApply bewp_new_theory.
-      iApply (bewp_add_label_l with "Hcoop").
-      iApply (bewp_add_label_r with "Hawait").
+      brel_pures_l. brel_pures_r.
+      iApply brel_effect_l. iIntros (coop_lbl) "!> Hcoop !>".
+      iApply brel_effect_r. iIntros (await_lbl) "Hawait !>".
+      iApply brel_new_theory.
+      iApply (brel_add_label_l with "Hcoop").
+      iApply (brel_add_label_r with "Hawait").
       iApply queue_create_spec. iIntros "!>" (q) "Hq".
-      bewp_pures_l.
-      iApply bewp_alloc_r. iIntros (p₂_status) "Hstatus".
-      iApply bewp_new_lock_r. iIntros (p₂_lock) "Hlock".
-      bewp_pures_r.
-      iApply bewp_alloc_l. iIntros (p₁) "!> Hp₁ _".
-      do 2 bewp_pure_l.
-      iApply fupd_bewp.
+      brel_pures_l.
+      iApply brel_alloc_r. iIntros (p₂_status) "Hstatus".
+      iApply brel_new_lock_r. iIntros (p₂_lock) "Hlock".
+      brel_pures_r.
+      iApply brel_alloc_l. iIntros (p₁) "!> Hp₁ _".
+      do 2 brel_pure_l.
+      iApply fupd_brel.
       iMod promiseInv_init as "[% HpromiseInv]".
       iSpecialize ("HpromiseInv" $! coop_lbl await_lbl q).
       iMod forge_token as (τ) "Hτ".
@@ -996,14 +996,14 @@ Section closed_implementation_and_specification.
       }
       iPoseProof (run_refines with "Hτ Hmember [Hmain]") as "Hrun".
       { iSpecialize ("Hmain" $! _ _ _ _ _ (coop_lib_rel_spec coop_lbl await_lbl)).
-        iApply (bewp_wand with "Hmain"). by auto.
+        iApply (brel_wand with "Hmain"). by auto.
       }
       iEval (rewrite ready_unfold /ready_pre) in "Hrun".
       iSpecialize ("Hrun" $! ([], []) with "HpromiseInv [Hq]").
       { iNext. iFrame. by iSplit. }
       iModIntro.
-      do 7 bewp_pure_l.
-      iApply (bewp_wand with "Hrun"). by auto.
+      do 7 brel_pure_l.
+      iApply (brel_wand with "Hrun"). by auto.
     Qed.
 
   End closed_proof.

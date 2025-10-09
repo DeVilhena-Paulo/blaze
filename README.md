@@ -95,39 +95,39 @@ various examples studied throughout the paper.
 
 | Paper                   | `Rocq` formalisation                                                |
 |-------------------------|---------------------------------------------------------------------|
-| Model of `baze` (Fig. 2) | Definitions in section `ewp` ([logic.v](/theories/logic.v)) |
-| Model of `blaze` (Fig. 4) | Definitions in section `bewp` ([logic.v](/theories/logic.v)) |
+| Model of `baze` (Fig. 2) | Definitions in section `rel` ([logic.v](/theories/logic.v)) |
+| Model of `blaze` (Fig. 4) | Definitions in section `brel` ([logic.v](/theories/logic.v)) |
 
 ### Rules
 
 | Paper                   | `Rocq` formalisation                                                |
 |-------------------------|---------------------------------------------------------------------|
-| Rule `Value` (Fig. 3) | Lemma `ewp_value` ([logic.v](/theories/logic.v)) |
-| Rule `Introduction` (Fig. 3) | Lemma `ewp_introduction` ([logic.v](/theories/logic.v)) |
-| Rule `Bind` (Fig. 3) | Lemma `ewp_bind` ([logic.v](/theories/logic.v)) |
-| Rule `Exhaustion` (Fig. 3) | Lemma `ewp_exhaustion` ([logic.v](/theories/logic.v)) |
-| Rule `Monotonicity` (Fig. 3) | Lemma `ewp_wand'` ([logic.v](/theories/logic.v)) |
-| Rule `Step-L` (Fig. 3) | Lemma `ewp_pure_step_l` ([logic.v](/theories/logic.v)) |
-| Rule `Step-R` (Fig. 3) | Lemma `ewp_pure_step_r` ([logic.v](/theories/logic.v)) |
-| Rule `Effect-L-★` (Fig. 5) | Lemma `bewp_effect_l` ([logic.v](/theories/logic.v)) |
-| Rule `Effect-R-★` (Fig. 5) | Lemma `bewp_effect_r` ([logic.v](/theories/logic.v)) |
-| Rule `Add-Label-L-★` (Fig. 5) | Lemma `bewp_add_label_l` ([logic.v](/theories/logic.v)) |
-| Rule `Add-Label-R-★` (Fig. 5) | Lemma `bewp_add_label_r` ([logic.v](/theories/logic.v)) |
-| Rule `New-Theory-★` (Fig. 5) | Lemma `bewp_new_theory` ([logic.v](/theories/logic.v)) |
-| Rule `Introduction-★` (Fig. 5) | Lemma `bewp_introduction` ([logic.v](/theories/logic.v)) |
-| Rule `Exhaustion-★` (Fig. 5) | Lemma `bewp_exhaustion` ([logic.v](/theories/logic.v)) |
-| Rule `Bind-★` (Fig. 5) | Lemma `bewp_bind''` ([logic.v](/theories/logic.v)) |
-| Rule `Gen-Monotonicity` | Lemma `ewp_mono` ([logic.v](/theories/logic.v)) |
-| Rule `Fork-L-★` | Lemma `bewp_fork_l` ([logic.v](/theories/logic.v)) |
-| Rule `Fork-R-★` | Lemma `bewp_fork_r` ([logic.v](/theories/logic.v)) |
-| Rule `Logical-Fork-★` | Lemma `bewp_logical_fork` ([logic.v](/theories/logic.v)) |
-| Rule `Thread-Swap-★` | Lemma `bewp_thread_swap` ([logic.v](/theories/logic.v)) |
+| Rule `Value` (Fig. 3) | Lemma `rel_value` ([logic.v](/theories/logic.v)) |
+| Rule `Introduction` (Fig. 3) | Lemma `rel_introduction` ([logic.v](/theories/logic.v)) |
+| Rule `Bind` (Fig. 3) | Lemma `rel_bind` ([logic.v](/theories/logic.v)) |
+| Rule `Exhaustion` (Fig. 3) | Lemma `rel_exhaustion` ([logic.v](/theories/logic.v)) |
+| Rule `Monotonicity` (Fig. 3) | Lemma `rel_wand'` ([logic.v](/theories/logic.v)) |
+| Rule `Step-L` (Fig. 3) | Lemma `rel_pure_step_l` ([logic.v](/theories/logic.v)) |
+| Rule `Step-R` (Fig. 3) | Lemma `rel_pure_step_r` ([logic.v](/theories/logic.v)) |
+| Rule `Effect-L-★` (Fig. 5) | Lemma `brel_effect_l` ([logic.v](/theories/logic.v)) |
+| Rule `Effect-R-★` (Fig. 5) | Lemma `brel_effect_r` ([logic.v](/theories/logic.v)) |
+| Rule `Add-Label-L-★` (Fig. 5) | Lemma `brel_add_label_l` ([logic.v](/theories/logic.v)) |
+| Rule `Add-Label-R-★` (Fig. 5) | Lemma `brel_add_label_r` ([logic.v](/theories/logic.v)) |
+| Rule `New-Theory-★` (Fig. 5) | Lemma `brel_new_theory` ([logic.v](/theories/logic.v)) |
+| Rule `Introduction-★` (Fig. 5) | Lemma `brel_introduction` ([logic.v](/theories/logic.v)) |
+| Rule `Exhaustion-★` (Fig. 5) | Lemma `brel_exhaustion` ([logic.v](/theories/logic.v)) |
+| Rule `Bind-★` (Fig. 5) | Lemma `brel_bind''` ([logic.v](/theories/logic.v)) |
+| Rule `Gen-Monotonicity` | Lemma `rel_mono` ([logic.v](/theories/logic.v)) |
+| Rule `Fork-L-★` | Lemma `brel_fork_l` ([logic.v](/theories/logic.v)) |
+| Rule `Fork-R-★` | Lemma `brel_fork_r` ([logic.v](/theories/logic.v)) |
+| Rule `Logical-Fork-★` | Lemma `brel_logical_fork` ([logic.v](/theories/logic.v)) |
+| Rule `Thread-Swap-★` | Lemma `brel_thread_swap` ([logic.v](/theories/logic.v)) |
 
 ### Adequacy
 
 | Paper                   | `Rocq` formalisation                                                |
 |-------------------------|---------------------------------------------------------------------|
-| Theorem 4.1 (§4.4) | Theorem `ewp_adequacy` ([adequacy.v](/theories/adequacy.v)) |
+| Theorem 4.1 (§4.4) | Theorem `rel_adequacy` ([adequacy.v](/theories/adequacy.v)) |
 
 ### Case studies
 
@@ -165,8 +165,8 @@ various examples studied throughout the paper.
 | Ghost thread-pool resource    | `i ⤇ e`                  | `i ⤇ e`                     |
 | Observational refinement      | `𝒪(eₗ, eᵣ, S)`           | `obs_refines eₗ eᵣ S`        |
 | Validation of a theory        | `{R} Kₗ ≾ Kᵣ {S}`        | `kwp R Kₗ Kᵣ S`              |
-| Refinement in `baze`          | `eₗ ≾ eᵣ ⟨T⟩ {R}`        | `EWP eₗ ≤ eᵣ <\|T\|> {{R}}`  |
-| Refinement in `blaze`         | `eₗ ≾_* eᵣ ⟨L⟩ {R}`      | `BEWP eₗ ≤ eᵣ <\|L\|> {{R}}` |
+| Refinement in `baze`          | `eₗ ≾ eᵣ ⟨T⟩ {R}`        | `REL eₗ ≤ eᵣ <\|T\|> {{R}}`  |
+| Refinement in `blaze`         | `eₗ ≾_* eᵣ ⟨L⟩ {R}`      | `BREL eₗ ≤ eᵣ <\|L\|> {{R}}` |
 
 
 ## Installation

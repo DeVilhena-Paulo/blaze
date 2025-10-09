@@ -15,7 +15,7 @@ Section theory.
     ∃ (task1 : val) (task2 : expr),
     ⌜ e1 = (do: fork task1)%E ⌝ ∗
     ⌜ e2 = (Fork task2)%E ⌝ ∗
-    ▷ BEWP task1 #() ≤ task2 <| [(([fork], []), COOP)] |> {{ _; _, True }} ∗
+    ▷ BREL task1 #() ≤ task2 <| [(([fork], []), COOP)] |> {{ _; _, True }} ∗
     Q #() #()
   )%I.
   Next Obligation. solve_proper. Qed.
@@ -70,7 +70,7 @@ Section verification.
       [∗ list] k1 ∈ k1s,
         ∃ (i : nat) (e2 : expr),
         i ⤇ e2 ∗
-        (▷ queue_inv -∗ BEWP Val k1 #() ≤ e2 <| [(([fork], []), iThyBot)] |> {{ _; _, True }})
+        (▷ queue_inv -∗ BREL Val k1 #() ≤ e2 <| [(([fork], []), iThyBot)] |> {{ _; _, True }})
     )%I.
 
     Local Instance queue_inv_pre_contractive : Contractive queue_inv_pre.
@@ -92,12 +92,12 @@ Section verification.
       ([∗ list] (k1 : val) ∈ k1s,
         ∃ (i : nat) (e2 : expr),
         i ⤇ e2 ∗
-        (▷ queue_inv -∗ BEWP k1 #() ≤ e2 <| [([fork], [], iThyBot)] |> {{ _; _, True }})
+        (▷ queue_inv -∗ BREL k1 #() ≤ e2 <| [([fork], [], iThyBot)] |> {{ _; _, True }})
       ) -∗
       is_queue q l1s -∗
       ∃ i (e2 : expr),
       i ⤇ e2 ∗
-      BEWP k1 #() ≤ e2 <| [([fork], [], iThyBot)] |> {{ _; _, True }}.
+      BREL k1 #() ≤ e2 <| [([fork], [], iThyBot)] |> {{ _; _, True }}.
     Proof.
       iIntros (Heq) "Hl Hq".
       case_eq (reverse k1s).
@@ -111,57 +111,57 @@ Section verification.
         rewrite Heq'' //= in Heq.
         destruct (app_inj_tail _ _ _ _ Heq) as [Hl' ->].
         rewrite Heq'' big_sepL_app //=.
-        iDestruct "Hl" as "(Hl & [%i [%e2 [Hi Hbewp]]] & _)".
+        iDestruct "Hl" as "(Hl & [%i [%e2 [Hi Hbrel]]] & _)".
         iExists i, e2. iFrame.
         rewrite Hl'.
-        iApply "Hbewp".
+        iApply "Hbrel".
         rewrite {-1}queue_inv_unfold /queue_inv_pre.
         iExists l1s. by iFrame.
     Qed.
 
     Lemma run_refines (e1 e2 : expr) :
       queue_inv -∗
-      BEWP e1 ≤ e2 <| [(([fork], []), COOP fork)] |> {{ _; _, True }} -∗
-      BEWP fork_handler e1 ≤ e2 <| [(([fork], []),  iThyBot)] |> {{ _; _, True }}.
+      BREL e1 ≤ e2 <| [(([fork], []), COOP fork)] |> {{ _; _, True }} -∗
+      BREL fork_handler e1 ≤ e2 <| [(([fork], []),  iThyBot)] |> {{ _; _, True }}.
     Proof.
       rewrite queue_inv_unfold /queue_inv_pre.
-      iIntros "[%k1s [Hq Hk1s]] Hbewp".
+      iIntros "[%k1s [Hq Hk1s]] Hbrel".
       iLöb as "IH" forall (k1s e1 e2).
-      iApply (bewp_exhaustion' OS with "Hbewp"); try done.
+      iApply (brel_exhaustion' OS with "Hbrel"); try done.
       iSplit.
       - iIntros (??) "_". simpl.
-        bewp_pures_l.
+        brel_pures_l.
         iApply (queue_empty_spec with "Hq"). iIntros "!> Hq".
         case_eq (reverse k1s).
         + intros Heq. rewrite (reverse_eq_nil _ Heq).
-          by bewp_pures_l.
+          by brel_pures_l.
         + intros k1 l1s Heq.
           specialize (f_equal reverse Heq) as Heq'.
           rewrite reverse_involutive reverse_cons in Heq'.
           rewrite Heq' length_app //= Nat.add_1_r.
-          bewp_pures_l.
+          brel_pures_l.
           iApply (queue_take_spec with "Hq").
           iIntros "!> Hq".
           iDestruct (exploit_queue_inv with "Hk1s Hq") as "H"; first done.
-          iDestruct "H" as "[%i [%e2' [Hi Hbewp]]]".
-          iApply (bewp_logical_fork _ [] with "Hi [Hbewp]").
-          { by iApply "Hbewp". }
-          iIntros "%% _ _". by iApply bewp_value.
+          iDestruct "H" as "[%i [%e2' [Hi Hbrel]]]".
+          iApply (brel_logical_fork _ [] with "Hi [Hbrel]").
+          { by iApply "Hbrel". }
+          iIntros "%% _ _". by iApply brel_value.
       - clear e1 e2.
         iIntros "%k1 %k2 %e1 %e2 %Q %Hk1 %Hk2 HCOOP Hk".
         rewrite COOP_unfold /COOP_pre //=.
-        iDestruct "HCOOP" as "[%task1 [%task2 (->& -> & Hbewp & HQ)]]".
-        bewp_pures_l. { by apply neutral_ectx; set_solver. }
+        iDestruct "HCOOP" as "[%task1 [%task2 (->& -> & Hbrel & HQ)]]".
+        brel_pures_l. { by apply neutral_ectx; set_solver. }
         iSpecialize ("Hk" with "HQ").
-        iApply bewp_fork_r.
+        iApply brel_fork_r.
         iIntros "%i Hi".
         iApply (queue_add_spec with "Hq").
         iIntros "!> Hq".
-        bewp_pures_l.
-        iApply ("IH" with "Hq [Hbewp Hk1s Hi] Hk").
+        brel_pures_l.
+        iApply ("IH" with "Hq [Hbrel Hk1s Hi] Hk").
         iFrame.
-        iIntros "Hq". bewp_pures_l.
-        rewrite /run. bewp_pures_l.
+        iIntros "Hq". brel_pures_l.
+        rewrite /run. brel_pures_l.
         rewrite {-1}queue_inv_unfold /queue_inv_pre.
         iDestruct "Hq" as "[%k1s' [Hq Hk1s']]".
         by iApply ("IH" with "Hq Hk1s'").
@@ -173,12 +173,12 @@ Section verification.
     let e1 : expr := (do: fork task1)%E in
     let e2 : expr := (Fork (task2 #()))%E in
 
-    BEWP task1 #() ≤ task2 #() <| [([fork], [], COOP fork)] |> {{ _; _, True }} -∗
-    BEWP e1 ≤ e2 <| [([fork], [], COOP fork)] |> {{ _; _, True }}.
+    BREL task1 #() ≤ task2 #() <| [([fork], [], COOP fork)] |> {{ _; _, True }} -∗
+    BREL e1 ≤ e2 <| [([fork], [], COOP fork)] |> {{ _; _, True }}.
   Proof.
-    iIntros (??) "Hbewp". rewrite /e1 /e2. clear e1 e2.
+    iIntros (??) "Hbrel". rewrite /e1 /e2. clear e1 e2.
     set Q : expr → expr → iProp Σ := (λ (s1 s2 : expr), ⌜ s1 = #() ⌝ ∗ ⌜ s2 = #() ⌝)%I.
-    iApply (bewp_introduction _ _ _ Q with "[Hbewp]"); first (by rewrite elem_of_cons; left).
+    iApply (brel_introduction _ _ _ Q with "[Hbrel]"); first (by rewrite elem_of_cons; left).
     { iExists (do: fork task1)%E, (Fork (task2 #()))%E, [], [], Q.
       iSplit; [done|]. iSplit; [by iPureIntro; apply _|].
       iSplit; [done|]. iSplit; [by iPureIntro; apply _|].
@@ -187,7 +187,7 @@ Section verification.
       iExists task1, (task2 #()).
       do 2 (iSplit; [done|]). by iSplit; auto.
     }
-    { iIntros "!> !> %% [-> ->]". by iApply bewp_value. }
+    { iIntros "!> !> %% [-> ->]". by iApply brel_value. }
   Qed.
 
   Theorem fork_handler_spec (main1 main2 : val) :
@@ -214,27 +214,27 @@ Section verification.
 
     (∀ (fork1 fork2 : val) L,
       □ (∀ (task1 task2 : val),
-         BEWP task1 #() ≤ task2 #() <| L |> {{ _; _, True }} -∗
-         BEWP fork1 task1 ≤ fork2 task2 <| L |> {{ _; _, True }}
+         BREL task1 #() ≤ task2 #() <| L |> {{ _; _, True }} -∗
+         BREL fork1 task1 ≤ fork2 task2 <| L |> {{ _; _, True }}
       ) -∗
-      BEWP main1 fork1 ≤ main2 fork2 <| L |> {{ _; _, True }}
+      BREL main1 fork1 ≤ main2 fork2 <| L |> {{ _; _, True }}
     ) -∗
 
-    BEWP e1 ≤ e2 <| [] |> {{ _; _, True }}.
+    BREL e1 ≤ e2 <| [] |> {{ _; _, True }}.
   Proof.
     iIntros (??) "Hmain". rewrite /e1 /e2. clear e1 e2.
-    iApply bewp_effect_l.
+    iApply brel_effect_l.
     iIntros "!> %fork Hfork !>". simpl.
 
-    bewp_pures_r.
+    brel_pures_r.
 
     iApply queue_create_spec.
     iIntros "!> %q Hq". simpl.
 
-    bewp_pures_l.
+    brel_pures_l.
 
-    iApply bewp_new_theory.
-    iApply (bewp_add_label_l with "Hfork").
+    iApply brel_new_theory.
+    iApply (brel_add_label_l with "Hfork").
 
     iApply (run_refines fork q (main1 _) (main2 _) with "[Hq]").
     { rewrite queue_inv_unfold. iExists []. by iFrame. }
@@ -242,8 +242,8 @@ Section verification.
     iApply "Hmain".
     iIntros "!> %task1 %task2 Htask".
 
-    bewp_pures_l.
-    bewp_pures_r.
+    brel_pures_l.
+    brel_pures_r.
 
     by iApply fork_refines.
   Qed.

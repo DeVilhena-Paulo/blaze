@@ -412,7 +412,7 @@ End theories.
 (* ------------------------------------------------------------------------- *)
 (* Model. *)
 
-Section ewp.
+Section rel.
   Context `{!blazeGS Σ}.
 
   (* ----------------------------------------------------------------------- *)
@@ -437,7 +437,7 @@ Section ewp.
   (* Validation of a theory by a pair of contextxs. *)
 
   Definition kwp_pre
-    (ewp : coPset -d> expr -d> expr -d> iThy Σ -d> (val -d> val -d> iProp Σ) -d> iProp Σ) :
+    (rel : coPset -d> expr -d> expr -d> iThy Σ -d> (val -d> val -d> iProp Σ) -d> iProp Σ) :
     (val -d> val -d> iProp Σ) -d>
     ectx -d> ectx -d> iThy Σ -d>
     (val -d> val -d> iProp Σ) -d> iProp Σ
@@ -448,7 +448,7 @@ Section ewp.
     (* Effect case. *)
     (∀ e1 e2 Q,
       X e1 e2 Q -∗
-      □ ▷ (∀ s1 s2, Q s1 s2 -∗ ewp ⊤ s1 s2 X R) -∗
+      □ ▷ (∀ s1 s2, Q s1 s2 -∗ rel ⊤ s1 s2 X R) -∗
       obs_refines ⊤ (fill k1 e1) (fill k2 e2) S
     )
   )%I.
@@ -456,51 +456,51 @@ Section ewp.
   (* ----------------------------------------------------------------------- *)
   (* Refinement (before fixpoint). *)
 
-  Definition ewp_pre :
+  Definition rel_pre :
    (coPset -d> expr -d> expr -d> iThy Σ -d> (val -d> val -d> iProp Σ) -d> iProp Σ) →
    (coPset -d> expr -d> expr -d> iThy Σ -d> (val -d> val -d> iProp Σ) -d> iProp Σ)
-  := (λ ewp E e1 e2 X R,
+  := (λ rel E e1 e2 X R,
     ∀ k1 k2 S,
-      (kwp_pre ewp R k1 k2 X S -∗ obs_refines E (fill k1 e1) (fill k2 e2) S)
+      (kwp_pre rel R k1 k2 X S -∗ obs_refines E (fill k1 e1) (fill k2 e2) S)
   )%I.
 
   Local Instance kwp_pre_contractive : Contractive kwp_pre.
   Proof.
-    rewrite /kwp_pre => n ewp ewp' Hdist R k1 k2 X S. f_equiv.
+    rewrite /kwp_pre => n rel rel' Hdist R k1 k2 X S. f_equiv.
     repeat (f_contractive || f_equiv).
     by apply Hdist.
   Qed.
 
-  Local Instance ewp_pre_contractive : Contractive ewp_pre.
+  Local Instance rel_pre_contractive : Contractive rel_pre.
   Proof.
-    rewrite /ewp_pre => n ewp ewp' Hdist E e1 e2 X R.
+    rewrite /rel_pre => n rel rel' Hdist E e1 e2 X R.
     repeat (f_contractive || f_equiv). by apply kwp_pre_contractive.
   Qed.
 
   (* ----------------------------------------------------------------------- *)
-  (* Definition of [ewp] -- Refinement relation as a fixpoint. *)
+  (* Definition of [rel] -- Refinement relation as a fixpoint. *)
 
-  Definition ewp_def := fixpoint ewp_pre.
-  Definition ewp_aux : seal ewp_def. Proof. by eexists. Qed.
-  Definition ewp := ewp_aux.(unseal).
+  Definition rel_def := fixpoint rel_pre.
+  Definition rel_aux : seal rel_def. Proof. by eexists. Qed.
+  Definition rel := rel_aux.(unseal).
 
   (* ----------------------------------------------------------------------- *)
   (* Definition of [kwp]. *)
 
-  Definition kwp := kwp_pre ewp.
+  Definition kwp := kwp_pre rel.
 
   (* ----------------------------------------------------------------------- *)
-  (* Rewriting principle for [ewp]. *)
+  (* Rewriting principle for [rel]. *)
 
-  Definition ewp_eq : ewp = ewp_def := ewp_aux.(seal_eq).
-  Global Lemma ewp_unfold E e1 e2 X R : ewp E e1 e2 X R ⊣⊢ ewp_pre ewp E e1 e2 X R.
-  Proof. by rewrite ewp_eq /ewp_def; apply (fixpoint_unfold ewp_pre). Qed.
+  Definition rel_eq : rel = rel_def := rel_aux.(seal_eq).
+  Global Lemma rel_unfold E e1 e2 X R : rel E e1 e2 X R ⊣⊢ rel_pre rel E e1 e2 X R.
+  Proof. by rewrite rel_eq /rel_def; apply (fixpoint_unfold rel_pre). Qed.
 
-  Global Instance ewp_ne E e1 e2 : NonExpansive2 (ewp E e1 e2).
+  Global Instance rel_ne E e1 e2 : NonExpansive2 (rel E e1 e2).
   Proof.
     intros n. revert E e1 e2.
     induction (lt_wf n) as [n _ IH]=> E e1 e2 X Y HXY R S HRS.
-    rewrite !ewp_unfold /ewp_pre /kwp_pre.
+    rewrite !rel_unfold /rel_pre /kwp_pre.
     do 16 f_equiv. { apply (HXY _ _). }
     f_equiv. f_contractive. do 5 f_equiv. apply IH; first done.
     - eapply dist_le; [apply HXY|].
@@ -508,7 +508,7 @@ Section ewp.
     - eapply dist_le; [apply HRS|].
       by apply SIdx.lt_le_incl.
   Qed.
-  Global Instance ewp_proper E e1 e2 : Proper ((≡) ==> (≡) ==> (≡)) (ewp E e1 e2).
+  Global Instance rel_proper E e1 e2 : Proper ((≡) ==> (≡) ==> (≡)) (rel E e1 e2).
   Proof. apply: ne_proper_2. Qed.
 
   Global Instance kwp_ne n :
@@ -529,27 +529,27 @@ Section ewp.
     apply kwp_ne; auto using equiv_dist.
   Qed.
 
-End ewp.
+End rel.
 
 
 (* ------------------------------------------------------------------------- *)
 (* Notation. *)
 
-Notation "'EWP' e1 ≤ e2 @ E <| X | > {{ R } }" :=
-  (ewp E e1%E e2%E X%I R%I)
+Notation "'REL' e1 ≤ e2 @ E <| X | > {{ R } }" :=
+  (rel E e1%E e2%E X%I R%I)
   (at level 20, E, e1, e2, X, R at next level, only parsing) : bi_scope.
-Notation "'EWP' e1 ≤ e2 @ E  <| X | > {{ v1 ; v2 , Q } }" :=
-  (ewp E e1%E e2%E X%I (λ v1 v2, Q)%I)
+Notation "'REL' e1 ≤ e2 @ E  <| X | > {{ v1 ; v2 , Q } }" :=
+  (rel E e1%E e2%E X%I (λ v1 v2, Q)%I)
   (at level 20, E, e1, e2, X, Q at next level,
-  format "'[hv' 'EWP'  e1  ≤  e2 @ E  '/' <| X | >  '/' {{  '[' v1  ;  v2 ,  '/' Q  ']' } } ']'") : bi_scope.
+  format "'[hv' 'REL'  e1  ≤  e2 @ E  '/' <| X | >  '/' {{  '[' v1  ;  v2 ,  '/' Q  ']' } } ']'") : bi_scope.
 
-Notation "'EWP' e1 ≤ e2 <| X | > {{ R } }" :=
-  (ewp ⊤ e1%E e2%E X%I R%I)
+Notation "'REL' e1 ≤ e2 <| X | > {{ R } }" :=
+  (rel ⊤ e1%E e2%E X%I R%I)
   (at level 20, e1, e2, X, R at next level, only parsing) : bi_scope.
-Notation "'EWP' e1 ≤ e2  <| X | > {{ v1 ; v2 , Q } }" :=
-  (ewp ⊤ e1%E e2%E X%I (λ v1 v2, Q)%I)
+Notation "'REL' e1 ≤ e2  <| X | > {{ v1 ; v2 , Q } }" :=
+  (rel ⊤ e1%E e2%E X%I (λ v1 v2, Q)%I)
   (at level 20, e1, e2, X, Q at next level,
-  format "'[hv' 'EWP'  e1  ≤  e2   '/' <| X | >  '/' {{  '[' v1  ;  v2 ,  '/' Q  ']' } } ']'") : bi_scope.
+  format "'[hv' 'REL'  e1  ≤  e2   '/' <| X | >  '/' {{  '[' v1  ;  v2 ,  '/' Q  ']' } } ']'") : bi_scope.
 
 
 (* ------------------------------------------------------------------------- *)
@@ -575,9 +575,9 @@ Section baze_rules.
     - by iIntros (???) "?".
   Qed.
 
-  Lemma ewp_value (v1 v2 : val) X R : R v1 v2 ⊢ EWP v1 ≤ v2 <|X|> {{R}}.
+  Lemma rel_value (v1 v2 : val) X R : R v1 v2 ⊢ REL v1 ≤ v2 <|X|> {{R}}.
   Proof.
-    rewrite !ewp_unfold /ewp_pre.
+    rewrite !rel_unfold /rel_pre.
     iIntros "HR" (k1 k2 S) "[Hvalue _]".
     by iApply "Hvalue".
   Qed.
@@ -590,63 +590,63 @@ Section baze_rules.
     by iApply ("H" with "Hs Hj").
   Qed.
 
-  Lemma fupd_ewp' E1 E2 e1 e2 X R :
-    (|={E1, E2}=> EWP e1 ≤ e2 @ E2 <|X|> {{R}}) ⊢ EWP e1 ≤ e2 @ E1 <|X|> {{R}}.
+  Lemma fupd_rel' E1 E2 e1 e2 X R :
+    (|={E1, E2}=> REL e1 ≤ e2 @ E2 <|X|> {{R}}) ⊢ REL e1 ≤ e2 @ E1 <|X|> {{R}}.
   Proof.
-    rewrite !ewp_unfold /ewp_pre.
-    iIntros "Hewp" (k1 k2 S) "Hkwp".
+    rewrite !rel_unfold /rel_pre.
+    iIntros "Hrel" (k1 k2 S) "Hkwp".
     rewrite obs_refines_eq /obs_refines_def.
     iIntros (j k) "#Hs Hj".
-    iMod "Hewp" as "Hewp".
-    by iSpecialize ("Hewp" with "Hkwp Hs Hj").
+    iMod "Hrel" as "Hrel".
+    by iSpecialize ("Hrel" with "Hkwp Hs Hj").
   Qed.
 
-  Lemma fupd_ewp e1 e2 X R : (|={⊤}=> EWP e1 ≤ e2 <|X|> {{R}}) ⊢ EWP e1 ≤ e2 <|X|> {{R}}.
+  Lemma fupd_rel e1 e2 X R : (|={⊤}=> REL e1 ≤ e2 <|X|> {{R}}) ⊢ REL e1 ≤ e2 <|X|> {{R}}.
   Proof.
-    rewrite !ewp_unfold /ewp_pre obs_refines_eq /obs_refines_def.
-    iIntros "Hewp %k1 %k2 %S Hkwp %j %k2' #Hspec Hj".
-    iApply fupd_wp. iMod "Hewp". iModIntro.
-    by iApply ("Hewp" with "Hkwp Hspec Hj").
+    rewrite !rel_unfold /rel_pre obs_refines_eq /obs_refines_def.
+    iIntros "Hrel %k1 %k2 %S Hkwp %j %k2' #Hspec Hj".
+    iApply fupd_wp. iMod "Hrel". iModIntro.
+    by iApply ("Hrel" with "Hkwp Hspec Hj").
   Qed.
 
-  Lemma ewp_introduction e1 e2 Q X R :
+  Lemma rel_introduction e1 e2 Q X R :
     X e1 e2 Q -∗
-    □ ▷ (∀ s1 s2, Q s1 s2 -∗ EWP s1 ≤ s2 <|X|> {{R}}) -∗
-    EWP e1 ≤ e2 <|X|> {{R}}.
+    □ ▷ (∀ s1 s2, Q s1 s2 -∗ REL s1 ≤ s2 <|X|> {{R}}) -∗
+    REL e1 ≤ e2 <|X|> {{R}}.
   Proof.
-    rewrite !ewp_unfold /ewp_pre.
+    rewrite !rel_unfold /rel_pre.
     iIntros "HX #HQ" (k1 k2 S). iIntros "[_ Hprot]".
     by iApply ("Hprot" with "HX").
   Qed.
 
-  Lemma ewp_introduction' e1 e2 X R :
-    X e1 e2 (λ s1 s2, EWP s1 ≤ s2 <|X|> {{R}}) ⊢ EWP e1 ≤ e2 <|X|> {{R}}.
-  Proof. iIntros "HX". by iApply (ewp_introduction with "HX"); auto. Qed.
+  Lemma rel_introduction' e1 e2 X R :
+    X e1 e2 (λ s1 s2, REL s1 ≤ s2 <|X|> {{R}}) ⊢ REL e1 ≤ e2 <|X|> {{R}}.
+  Proof. iIntros "HX". by iApply (rel_introduction with "HX"); auto. Qed.
 
-  Lemma ewp_introduction_mono e1 e2 X Y R :
-    EWP e1 ≤ e2 <|X|> {{R}} -∗ iThy_le X Y -∗ EWP e1 ≤ e2 <|Y|> {{R}}.
+  Lemma rel_introduction_mono e1 e2 X Y R :
+    REL e1 ≤ e2 <|X|> {{R}} -∗ iThy_le X Y -∗ REL e1 ≤ e2 <|Y|> {{R}}.
   Proof.
     iLöb as "IH" forall (e1 e2).
-    rewrite !ewp_unfold /ewp_pre.
-    iIntros "Hewp #Hle %k1 %k2 %S Hkwp".
-    iApply "Hewp". clear e1 e2.
+    rewrite !rel_unfold /rel_pre.
+    iIntros "Hrel #Hle %k1 %k2 %S Hkwp".
+    iApply "Hrel". clear e1 e2.
     iSplit.
     - iIntros (v1 v2) "HR". by iApply "Hkwp".
-    - iIntros (e1 e2 Q) "HX #Hewp".
+    - iIntros (e1 e2 Q) "HX #Hrel".
       iApply ("Hkwp" with "[HX]").
       { iApply ("Hle" with "HX"). }
       iIntros "!> !> %% HQ".
-      iSpecialize ("Hewp" with "HQ").
-      iApply ("IH" with "Hewp Hle").
+      iSpecialize ("Hrel" with "HQ").
+      iApply ("IH" with "Hrel Hle").
   Qed.
 
-  Lemma ewp_atomic_l (E : coPset) K e1 e2 X R
+  Lemma rel_atomic_l (E : coPset) K e1 e2 X R
         (Hatomic : Atomic WeaklyAtomic e1) :
    (|={⊤,E}=> WP e1 @ E {{ v,
-     EWP fill K (of_val v) ≤ e2 @ E <|X|> {{R}} }})%I -∗
-   EWP fill K e1 ≤ e2 <|X|> {{R}}.
+     REL fill K (of_val v) ≤ e2 @ E <|X|> {{R}} }})%I -∗
+   REL fill K e1 ≤ e2 <|X|> {{R}}.
   Proof.
-    rewrite !ewp_unfold /ewp_pre.
+    rewrite !rel_unfold /rel_pre.
     rewrite obs_refines_eq /obs_refines_def.
     iIntros "Hlog".
     iIntros (k1 k2 S) "Hkwp".
@@ -656,7 +656,7 @@ Section baze_rules.
     iMod "Hlog" as "He". iModIntro.
     iApply (wp_wand with "He").
     iIntros (v) "Hlog".
-    rewrite !ewp_unfold /ewp_pre.
+    rewrite !rel_unfold /rel_pre.
     rewrite obs_refines_eq /obs_refines_def.
     rewrite !fill_app.
     by iSpecialize ("Hlog" with "Hkwp Hs Hj").
@@ -664,165 +664,165 @@ Section baze_rules.
 
   Definition closeInv N P : iProp Σ := ▷ P ={⊤ ∖ ↑N, ⊤}=∗ True.
 
-  Lemma ewp_inv_restore N P e1 e2 X R :
+  Lemma rel_inv_restore N P e1 e2 X R :
    closeInv N P -∗
    ▷ P -∗
-   EWP e1 ≤ e2 <|X|> {{R}} -∗
-   EWP e1 ≤ e2 @ (⊤ ∖ ↑N) <|X|> {{R}}.
+   REL e1 ≤ e2 <|X|> {{R}} -∗
+   REL e1 ≤ e2 @ (⊤ ∖ ↑N) <|X|> {{R}}.
   Proof.
-    iIntros "Hclose HP Hewp".
+    iIntros "Hclose HP Hrel".
     iSpecialize ("Hclose" with "HP").
-    iApply (fupd_ewp' (⊤ ∖ ↑N) ⊤).
+    iApply (fupd_rel' (⊤ ∖ ↑N) ⊤).
     iMod "Hclose" as "Hclose".
     by iModIntro.
   Qed.
 
-  Lemma ewp_inv_alloc N P e1 e2 X R :
+  Lemma rel_inv_alloc N P e1 e2 X R :
    ▷ P -∗
-   (inv N P -∗ EWP e1 ≤ e2 <|X|> {{R}}) -∗
-   EWP e1 ≤ e2 <|X|> {{R}}.
+   (inv N P -∗ REL e1 ≤ e2 <|X|> {{R}}) -∗
+   REL e1 ≤ e2 <|X|> {{R}}.
   Proof.
-    iIntros "HP Hewp".
-    iApply fupd_ewp.
+    iIntros "HP Hrel".
+    iApply fupd_rel.
     iMod (inv_alloc N ⊤ P with "HP") as "Hinv".
     iModIntro.
-    by iApply "Hewp".
+    by iApply "Hrel".
   Qed.
 
-  Lemma ewp_wand' e1 e2 X Y R S :
+  Lemma rel_wand' e1 e2 X Y R S :
     iThy_le X Y -∗
-    EWP e1 ≤ e2 <|X|> {{R}} -∗
+    REL e1 ≤ e2 <|X|> {{R}} -∗
     (□ ∀ v1 v2, R v1 v2 -∗ S v1 v2) -∗
-    EWP e1 ≤ e2 <|Y|> {{S}}.
+    REL e1 ≤ e2 <|Y|> {{S}}.
   Proof.
     iLöb as "IH" forall (e1 e2).
-    rewrite !ewp_unfold /ewp_pre.
-    iIntros "#HY Hewp #Hle %k1 %k2 %T Hkwp".
-    iApply "Hewp".
+    rewrite !rel_unfold /rel_pre.
+    iIntros "#HY Hrel #Hle %k1 %k2 %T Hkwp".
+    iApply "Hrel".
     iSplit.
     - iIntros (v1 v2) "HR". iApply "Hkwp". by iApply "Hle".
-    - iIntros (e1' e2' Q) "HX #Hewp".
+    - iIntros (e1' e2' Q) "HX #Hrel".
       iApply ("Hkwp" with "[HX]"). { by iApply "HY". }
       iIntros "!> !> %% HQ".
-      iSpecialize ("Hewp" with "HQ").
-      by iApply ("IH" with "HY Hewp").
+      iSpecialize ("Hrel" with "HQ").
+      by iApply ("IH" with "HY Hrel").
   Qed.
 
-  Lemma ewp_wand e1 e2 X R S :
-    EWP e1 ≤ e2 <|X|> {{R}} -∗
+  Lemma rel_wand e1 e2 X R S :
+    REL e1 ≤ e2 <|X|> {{R}} -∗
     (□ ∀ v1 v2, R v1 v2 -∗ S v1 v2) -∗
-    EWP e1 ≤ e2 <|X|> {{S}}.
-  Proof. iApply ewp_wand'. by iApply iThy_le_refl. Qed.
+    REL e1 ≤ e2 <|X|> {{S}}.
+  Proof. iApply rel_wand'. by iApply iThy_le_refl. Qed.
 
-  Lemma ewp_mono' (m : mode) e1 e2 X Y R S :
+  Lemma rel_mono' (m : mode) e1 e2 X Y R S :
     iThy_le X Y -∗
-    EWP e1 ≤ e2 <|X|> {{R}} -∗
+    REL e1 ≤ e2 <|X|> {{R}} -∗
     (□?m ∀ v1 v2, R v1 v2 -∗ S v1 v2) -∗
-    EWP e1 ≤ e2 <|iThyIfMono m Y|> {{S}}.
+    REL e1 ≤ e2 <|iThyIfMono m Y|> {{S}}.
   Proof.
-    case m; [|by apply ewp_wand']. simpl.
+    case m; [|by apply rel_wand']. simpl.
     iLöb as "IH" forall (e1 e2).
-    iIntros "#HY Hewp HS".
-    rewrite !ewp_unfold /ewp_pre.
+    iIntros "#HY Hrel HS".
+    rewrite !rel_unfold /rel_pre.
     iIntros "%k1 %k2 %T Hkwp".
-    iApply "Hewp".
+    iApply "Hrel".
     iSplit.
     - iIntros (v1 v2) "HR". iApply "Hkwp". by iApply "HS".
-    - iIntros (e1' e2' Q) "HX #Hewp".
+    - iIntros (e1' e2' Q) "HX #Hrel".
       iDestruct "Hkwp" as "[_ Hkwp]".
-      set Q' := (λ s1 s2, EWP s1 ≤ s2 <|iThyMono Y|> {{S}})%I.
+      set Q' := (λ s1 s2, REL s1 ≤ s2 <|iThyMono Y|> {{S}})%I.
       iApply ("Hkwp" $! e1' e2' Q' with "[HS HX]"); last auto.
       iExists Q. iSplitL "HX". { by iApply "HY". }
       rewrite /Q'.
       iIntros "!> %s1 %s2 HQ".
-      iApply ("IH" with "HY [HQ Hewp] HS").
-      by iApply "Hewp".
+      iApply ("IH" with "HY [HQ Hrel] HS").
+      by iApply "Hrel".
   Qed.
 
-  Lemma ewp_mono (m : mode) e1 e2 X R S :
-    EWP e1 ≤ e2 <|X|> {{R}} -∗
+  Lemma rel_mono (m : mode) e1 e2 X R S :
+    REL e1 ≤ e2 <|X|> {{R}} -∗
     (□?m ∀ v1 v2, R v1 v2 -∗ S v1 v2) -∗
-    EWP e1 ≤ e2 <|iThyIfMono m X|> {{S}}.
-  Proof. iApply ewp_mono'. by iApply iThy_le_refl. Qed.
+    REL e1 ≤ e2 <|iThyIfMono m X|> {{S}}.
+  Proof. iApply rel_mono'. by iApply iThy_le_refl. Qed.
 
-  Lemma ewp_introduction_sum_mono_l e1 e2 X Y Z R :
-    EWP e1 ≤ e2 <|iThySum X Z|> {{R}} -∗
+  Lemma rel_introduction_sum_mono_l e1 e2 X Y Z R :
+    REL e1 ≤ e2 <|iThySum X Z|> {{R}} -∗
     iThy_le X Y -∗
-    EWP e1 ≤ e2 <|iThySum Y Z|> {{R}}.
+    REL e1 ≤ e2 <|iThySum Y Z|> {{R}}.
   Proof.
-    iIntros "Hewp Hle".
-    iApply (ewp_introduction_mono with "Hewp").
+    iIntros "Hrel Hle".
+    iApply (rel_introduction_mono with "Hrel").
     iApply (iThy_le_sum_l with "Hle").
   Qed.
 
-  Lemma ewp_introduction_sum_mono_r e1 e2 X Y Z R :
-    EWP e1 ≤ e2 <|iThySum Z X|> {{R}} -∗
+  Lemma rel_introduction_sum_mono_r e1 e2 X Y Z R :
+    REL e1 ≤ e2 <|iThySum Z X|> {{R}} -∗
     iThy_le X Y -∗
-    EWP e1 ≤ e2 <|iThySum Z Y|> {{R}}.
+    REL e1 ≤ e2 <|iThySum Z Y|> {{R}}.
   Proof.
-    iIntros "Hewp Hle".
-    iApply (ewp_introduction_mono with "Hewp").
+    iIntros "Hrel Hle".
+    iApply (rel_introduction_mono with "Hrel").
     iApply (iThy_le_sum_r with "Hle").
   Qed.
 
-  Lemma ewp_exhaustion k1 k2 e1 e2 X Y R S :
-    EWP e1 ≤ e2 <|X|> {{R}} -∗
+  Lemma rel_exhaustion k1 k2 e1 e2 X Y R S :
+    REL e1 ≤ e2 <|X|> {{R}} -∗
 
-    ((∀ v1 v2, R v1 v2 -∗ EWP fill k1 v1 ≤ fill k2 v2 <|Y|> {{S}})
+    ((∀ v1 v2, R v1 v2 -∗ REL fill k1 v1 ≤ fill k2 v2 <|Y|> {{S}})
 
        ∧
 
      (∀ e1' e2' Q,
        X e1' e2' Q -∗
-       □ ▷ (∀ s1 s2, Q s1 s2 -∗ EWP s1 ≤ s2 <|X|> {{R}}) -∗
-       EWP fill k1 e1' ≤ fill k2 e2' <|Y|> {{S}})
+       □ ▷ (∀ s1 s2, Q s1 s2 -∗ REL s1 ≤ s2 <|X|> {{R}}) -∗
+       REL fill k1 e1' ≤ fill k2 e2' <|Y|> {{S}})
     ) -∗
 
-    EWP fill k1 e1 ≤ fill k2 e2 <|Y|> {{S}}.
+    REL fill k1 e1 ≤ fill k2 e2 <|Y|> {{S}}.
   Proof.
-    rewrite !ewp_unfold /ewp_pre.
-    iIntros "Hewp Hfill".
+    rewrite !rel_unfold /rel_pre.
+    iIntros "Hrel Hfill".
     iIntros (k1' k2' T) "HK".
     rewrite -!fill_app.
-    iApply "Hewp".
+    iApply "Hrel".
     iSplit.
     - iIntros (v1 v2) "HR".
       iSpecialize ("Hfill" with "HR").
-      rewrite !ewp_unfold /ewp_pre !fill_app.
+      rewrite !rel_unfold /rel_pre !fill_app.
       by iApply "Hfill".
     - iIntros (e1' e2' Q) "HX #HQ".
       iSpecialize ("Hfill" with "HX HQ").
-      rewrite !ewp_unfold /ewp_pre.
+      rewrite !rel_unfold /rel_pre.
       iSpecialize ("Hfill" $! k1' k2').
       rewrite -!fill_app.
       by iApply "Hfill".
   Qed.
 
-  Lemma ewp_exhaustion_sum_l k1 k2 e1 e2 X Y Z R S :
+  Lemma rel_exhaustion_sum_l k1 k2 e1 e2 X Y Z R S :
     traversable k1 k2 X -∗
 
-    EWP e1 ≤ e2 <|iThySum X Y|> {{R}} -∗
+    REL e1 ≤ e2 <|iThySum X Y|> {{R}} -∗
 
-    □ ((∀ v1 v2, R v1 v2 -∗ EWP fill k1 v1 ≤ fill k2 v2 <|iThySum X Z|> {{S}})
+    □ ((∀ v1 v2, R v1 v2 -∗ REL fill k1 v1 ≤ fill k2 v2 <|iThySum X Z|> {{S}})
 
          ∧
 
        (∀ e1' e2' Q,
          Y e1' e2' Q -∗
-         □ ▷ (∀ s1 s2, Q s1 s2 -∗ EWP s1 ≤ s2 <|iThySum X Y|> {{R}}) -∗
-         EWP fill k1 e1' ≤ fill k2 e2' <|iThySum X Z|> {{S}})
+         □ ▷ (∀ s1 s2, Q s1 s2 -∗ REL s1 ≤ s2 <|iThySum X Y|> {{R}}) -∗
+         REL fill k1 e1' ≤ fill k2 e2' <|iThySum X Z|> {{S}})
     ) -∗
 
-    EWP fill k1 e1 ≤ fill k2 e2 <|iThySum X Z|> {{S}}.
+    REL fill k1 e1 ≤ fill k2 e2 <|iThySum X Z|> {{S}}.
   Proof.
     iLöb as "IH" forall (e1 e2).
-    iIntros "#HX' Hewp #Hfill".
-    iApply (ewp_exhaustion with "Hewp").
+    iIntros "#HX' Hrel #Hfill".
+    iApply (rel_exhaustion with "Hrel").
     iSplit; [iIntros (??) "HS"; by iApply "Hfill"|].
     clear e1 e2.
     iIntros (e1 e2 Q) "[HX|HY] #Hk"; [|by iApply ("Hfill" with "HY")].
     iDestruct ("HX'" with "HX") as "(%Q'&HX&#HQ)".
-    iApply (ewp_introduction with "[HX]"). { iLeft. by iApply "HX". }
+    iApply (rel_introduction with "[HX]"). { iLeft. by iApply "HX". }
     iIntros "!> !>" (s1 s2) "HQ'".
     iDestruct ("HQ" with "HQ'") as "(%s1'&%s2'&%Hs1&%Hs2&H)".
     rewrite Hs1 Hs2 //=.
@@ -830,33 +830,33 @@ Section baze_rules.
     by iApply ("IH" with "[//] Hk").
   Qed.
 
-  Lemma ewp_exhaustion_sum_l' (m : mode) k1 k2 e1 e2 X Y Z R S :
+  Lemma rel_exhaustion_sum_l' (m : mode) k1 k2 e1 e2 X Y Z R S :
     traversable k1 k2 X -∗
 
-    EWP e1 ≤ e2 <|iThySum X Y|> {{R}} -∗
+    REL e1 ≤ e2 <|iThySum X Y|> {{R}} -∗
 
     □?m (
-      (∀ v1 v2, R v1 v2 -∗ EWP fill k1 v1 ≤ fill k2 v2 <|iThySum (iThyIfMono m X) Z|> {{S}})
+      (∀ v1 v2, R v1 v2 -∗ REL fill k1 v1 ≤ fill k2 v2 <|iThySum (iThyIfMono m X) Z|> {{S}})
 
         ∧
 
       (∀ e1' e2' Q,
         Y e1' e2' Q -∗
-        □?m ▷ (∀ s1 s2, Q s1 s2 -∗ EWP s1 ≤ s2 <|iThySum X Y|> {{R}}) -∗
-        EWP fill k1 e1' ≤ fill k2 e2' <|iThySum (iThyIfMono m X) Z|> {{S}})
+        □?m ▷ (∀ s1 s2, Q s1 s2 -∗ REL s1 ≤ s2 <|iThySum X Y|> {{R}}) -∗
+        REL fill k1 e1' ≤ fill k2 e2' <|iThySum (iThyIfMono m X) Z|> {{S}})
     ) -∗
 
-    EWP fill k1 e1 ≤ fill k2 e2 <|iThySum (iThyIfMono m X) Z|> {{S}}.
+    REL fill k1 e1 ≤ fill k2 e2 <|iThySum (iThyIfMono m X) Z|> {{S}}.
   Proof.
-    case m; [|apply ewp_exhaustion_sum_l]. simpl.
+    case m; [|apply rel_exhaustion_sum_l]. simpl.
     iLöb as "IH" forall (e1 e2).
-    iIntros "#HX' Hewp Hfill".
-    iApply (ewp_exhaustion with "Hewp").
+    iIntros "#HX' Hrel Hfill".
+    iApply (rel_exhaustion with "Hrel").
     iSplit; [iIntros (??) "HS"; by iApply "Hfill"|].
     clear e1 e2.
     iIntros (e1 e2 Q) "[HX|HY] #Hk"; [|by iApply ("Hfill" with "HY")].
     iDestruct ("HX'" with "HX") as "(%Q'&HX&#HQ)".
-    iApply ewp_introduction'. iLeft. iExists Q'. iFrame.
+    iApply rel_introduction'. iLeft. iExists Q'. iFrame.
     iIntros "!> %s1 %s2 HQ'".
     iDestruct ("HQ" with "HQ'") as "(%s1'&%s2'&%Hs1&%Hs2&H)".
     rewrite Hs1 Hs2 //=.
@@ -864,116 +864,116 @@ Section baze_rules.
     by iApply ("IH" with "[//] Hk").
   Qed.
 
-  Lemma ewp_exhaustion_sum_r' (m : mode) k1 k2 e1 e2 X Y Z R S :
+  Lemma rel_exhaustion_sum_r' (m : mode) k1 k2 e1 e2 X Y Z R S :
     traversable k1 k2 Y -∗
 
-    EWP e1 ≤ e2 <|iThySum X Y|> {{R}} -∗
+    REL e1 ≤ e2 <|iThySum X Y|> {{R}} -∗
 
     □?m (
-      (∀ v1 v2, R v1 v2 -∗ EWP fill k1 v1 ≤ fill k2 v2 <|iThySum Z (iThyIfMono m Y)|> {{S}})
+      (∀ v1 v2, R v1 v2 -∗ REL fill k1 v1 ≤ fill k2 v2 <|iThySum Z (iThyIfMono m Y)|> {{S}})
 
         ∧
 
       (∀ e1' e2' Q,
         X e1' e2' Q -∗
-        □?m ▷ (∀ s1 s2, Q s1 s2 -∗ EWP s1 ≤ s2 <|iThySum X Y|> {{R}}) -∗
-        EWP fill k1 e1' ≤ fill k2 e2' <|iThySum Z (iThyIfMono m Y)|> {{S}})
+        □?m ▷ (∀ s1 s2, Q s1 s2 -∗ REL s1 ≤ s2 <|iThySum X Y|> {{R}}) -∗
+        REL fill k1 e1' ≤ fill k2 e2' <|iThySum Z (iThyIfMono m Y)|> {{S}})
     ) -∗
 
-    EWP fill k1 e1 ≤ fill k2 e2 <|iThySum Z (iThyIfMono m Y)|> {{S}}.
+    REL fill k1 e1 ≤ fill k2 e2 <|iThySum Z (iThyIfMono m Y)|> {{S}}.
   Proof.
     iIntros "#Htraversable He12 Hfill".
-    iApply (ewp_introduction_mono with "[He12 Hfill]"); last iApply iThy_le_sum_swap.
-    iApply (ewp_exhaustion_sum_l' with "Htraversable [He12] [Hfill]").
-    { iApply (ewp_introduction_mono with "He12").
+    iApply (rel_introduction_mono with "[He12 Hfill]"); last iApply iThy_le_sum_swap.
+    iApply (rel_exhaustion_sum_l' with "Htraversable [He12] [Hfill]").
+    { iApply (rel_introduction_mono with "He12").
       by iApply iThy_le_sum_swap.
     }
     { case m; simpl; [|iDestruct "Hfill" as "#Hfill"; iModIntro]; iSplit.
       - iIntros (v1 v2) "HR".
-        iApply (ewp_introduction_mono with "[HR Hfill]"); last iApply iThy_le_sum_swap.
+        iApply (rel_introduction_mono with "[HR Hfill]"); last iApply iThy_le_sum_swap.
         by iApply "Hfill".
       - iIntros (e1' e2' Q) "HX Hk".
-        iApply (ewp_introduction_mono with "[HX Hfill Hk]"); last iApply iThy_le_sum_swap.
+        iApply (rel_introduction_mono with "[HX Hfill Hk]"); last iApply iThy_le_sum_swap.
         iApply ("Hfill" with "HX").
         iIntros "!>" (s1 s2) "HQ".
         iSpecialize ("Hk" with "HQ").
-        iApply (ewp_introduction_mono with "Hk").
+        iApply (rel_introduction_mono with "Hk").
         by iApply iThy_le_sum_swap.
       - iIntros (v1 v2) "HR".
-        iApply (ewp_introduction_mono with "[HR]"); last iApply iThy_le_sum_swap.
+        iApply (rel_introduction_mono with "[HR]"); last iApply iThy_le_sum_swap.
         by iApply "Hfill".
       - iIntros (e1' e2' Q) "HX #Hk".
-        iApply (ewp_introduction_mono with "[HX]"); last iApply iThy_le_sum_swap.
+        iApply (rel_introduction_mono with "[HX]"); last iApply iThy_le_sum_swap.
         iApply ("Hfill" with "HX").
         iIntros "!> !>" (s1 s2) "HQ".
         iSpecialize ("Hk" with "HQ").
-        iApply (ewp_introduction_mono with "Hk").
+        iApply (rel_introduction_mono with "Hk").
         by iApply iThy_le_sum_swap.
     }
   Qed.
 
-  Lemma ewp_bind k1 k2 e1 e2 X Y R :
+  Lemma rel_bind k1 k2 e1 e2 X Y R :
     traversable k1 k2 X -∗
     iThy_le X Y -∗
-    EWP e1 ≤ e2 <|X|> {{ v1; v2, EWP fill k1 v1 ≤ fill k2 v2 <|Y|> {{R}} }} -∗
-    EWP fill k1 e1 ≤ fill k2 e2 <|Y|> {{R}}.
+    REL e1 ≤ e2 <|X|> {{ v1; v2, REL fill k1 v1 ≤ fill k2 v2 <|Y|> {{R}} }} -∗
+    REL fill k1 e1 ≤ fill k2 e2 <|Y|> {{R}}.
   Proof.
     iIntros "#Htrav #Hle He12".
     iLöb as "IH" forall (e1 e2).
-    iApply (ewp_exhaustion with "He12"). iSplit; first auto.
+    iApply (rel_exhaustion with "He12"). iSplit; first auto.
     iIntros (???) "HX #Hk".
     iDestruct ("Htrav" with "HX") as "(%Q' & HX & #HQ)".
     iDestruct ("Hle" with "HX") as "HY".
-    iApply (ewp_introduction with "HY").
+    iApply (rel_introduction with "HY").
     iIntros "!> !> %% HQ'". clear e1 e2.
     iDestruct ("HQ" with "HQ'") as "[%e1 [%e2 (-> & -> & H)]]".
     iApply "IH". by iApply "Hk".
   Qed.
 
-  Lemma ewp_bind' k1 k2 e1 e2 X R :
+  Lemma rel_bind' k1 k2 e1 e2 X R :
     traversable k1 k2 X -∗
-    EWP e1 ≤ e2 <|X|> {{ v1; v2, EWP fill k1 v1 ≤ fill k2 v2 <|X|> {{R}} }} -∗
-    EWP fill k1 e1 ≤ fill k2 e2 <|X|> {{R}}.
-  Proof. iIntros "#HX". by iApply ewp_bind; last iApply iThy_le_refl. Qed.
+    REL e1 ≤ e2 <|X|> {{ v1; v2, REL fill k1 v1 ≤ fill k2 v2 <|X|> {{R}} }} -∗
+    REL fill k1 e1 ≤ fill k2 e2 <|X|> {{R}}.
+  Proof. iIntros "#HX". by iApply rel_bind; last iApply iThy_le_refl. Qed.
 
-  Lemma ewp_introduction_sum_swap e1 e2 X Y R :
-    EWP e1 ≤ e2 <|iThySum X Y|> {{R}} -∗ EWP e1 ≤ e2 <|iThySum Y X|> {{R}}.
+  Lemma rel_introduction_sum_swap e1 e2 X Y R :
+    REL e1 ≤ e2 <|iThySum X Y|> {{R}} -∗ REL e1 ≤ e2 <|iThySum Y X|> {{R}}.
   Proof.
     iLöb as "IH" forall (e1 e2).
-    rewrite !ewp_unfold /ewp_pre.
-    iIntros "Hewp" (k1 k2 S) "HK".
-    iApply "Hewp".
+    rewrite !rel_unfold /rel_pre.
+    iIntros "Hrel" (k1 k2 S) "HK".
+    iApply "Hrel".
     iSplit; [by iDestruct "HK" as "[$ _]"|].
-    iIntros (???) "HXY #Hewp".
+    iIntros (???) "HXY #Hrel".
     iDestruct "HXY" as "[HX|HY]".
     - iApply ("HK" with "[HX]"). { by iRight. }
       iIntros "!> !>" (??) "HQ".
-      iSpecialize ("Hewp" with "HQ").
+      iSpecialize ("Hrel" with "HQ").
       by iApply "IH".
     - iApply ("HK" with "[HY]"). { by iLeft. }
       iIntros "!> !>" (??) "HQ".
-      iSpecialize ("Hewp" with "HQ").
+      iSpecialize ("Hrel" with "HQ").
       by iApply "IH".
   Qed.
 
-  Lemma ewp_introduction_sum_l e1 e2 X Y R :
-    EWP e1 ≤ e2 <|X|> {{R}} -∗ EWP e1 ≤ e2 <|iThySum X Y|> {{R}}.
+  Lemma rel_introduction_sum_l e1 e2 X Y R :
+    REL e1 ≤ e2 <|X|> {{R}} -∗ REL e1 ≤ e2 <|iThySum X Y|> {{R}}.
   Proof.
     iLöb as "IH" forall (e1 e2).
-    rewrite !ewp_unfold /ewp_pre.
-    iIntros "Hewp" (k1 k2 S) "HK".
-    iApply "Hewp".
+    rewrite !rel_unfold /rel_pre.
+    iIntros "Hrel" (k1 k2 S) "HK".
+    iApply "Hrel".
     iSplit; [by iDestruct "HK" as "[$ _]"|].
-    iIntros (???) "HX #Hewp".
+    iIntros (???) "HX #Hrel".
     iApply ("HK" with "[HX]"). { by iLeft. }
     iIntros "!> !>" (??) "HQ".
-    iSpecialize ("Hewp" with "HQ").
+    iSpecialize ("Hrel" with "HQ").
     by iApply "IH".
   Qed.
 
-  Lemma ewp_introduction_sum_r e1 e2 X Y R :
-    EWP e1 ≤ e2 <|Y|> {{R}} -∗ EWP e1 ≤ e2 <|iThySum X Y|> {{R}}.
-  Proof. by iIntros "?"; iApply ewp_introduction_sum_swap; iApply ewp_introduction_sum_l. Qed.
+  Lemma rel_introduction_sum_r e1 e2 X Y R :
+    REL e1 ≤ e2 <|Y|> {{R}} -∗ REL e1 ≤ e2 <|iThySum X Y|> {{R}}.
+  Proof. by iIntros "?"; iApply rel_introduction_sum_swap; iApply rel_introduction_sum_l. Qed.
 
   Lemma obs_refines_pure_step_l e1 e1' e2 φ n S :
     φ →
@@ -1008,168 +1008,168 @@ Section baze_rules.
     obs_refines ⊤ e1 e2' S -∗ obs_refines ⊤ e1 e2 S.
   Proof. by apply obs_refines_pure_step_r_with_mask. Qed.
 
-  Lemma ewp_pure_step_l e1 e1' e2 X φ n R :
+  Lemma rel_pure_step_l e1 e1' e2 X φ n R :
     φ →
     PureExec φ n e1 e1' →
-    ▷^n (£ n -∗ EWP e1' ≤ e2 <|X|> {{R}}) ⊢ EWP e1 ≤ e2 <|X|> {{R}}.
+    ▷^n (£ n -∗ REL e1' ≤ e2 <|X|> {{R}}) ⊢ REL e1 ≤ e2 <|X|> {{R}}.
   Proof.
-    rewrite !ewp_unfold /ewp_pre.
-    iIntros (Hφ Hexec) "Hewp"; iIntros (k1 k2 S) "Hkwp".
+    rewrite !rel_unfold /rel_pre.
+    iIntros (Hφ Hexec) "Hrel"; iIntros (k1 k2 S) "Hkwp".
     iApply (obs_refines_pure_step_l (fill k1 e1) (fill k1 e1')).
     { by apply Hφ. }
     { by apply pure_exec_fill. }
-    { iIntros "!> H". iApply ("Hewp" with "H Hkwp"). }
+    { iIntros "!> H". iApply ("Hrel" with "H Hkwp"). }
   Qed.
 
-  Lemma ewp_pure_step_l' e1 e1' e2 φ n X R :
+  Lemma rel_pure_step_l' e1 e1' e2 φ n X R :
     PureExec φ n e1 e1' →
     φ →
-    ▷^n (£ n -∗ EWP e1' ≤ e2 <|X|> {{R}}) ⊢ EWP e1 ≤ e2 <|X|> {{R}}.
-  Proof. by intros ??; apply (ewp_pure_step_l _ _ _ _ φ). Qed.
+    ▷^n (£ n -∗ REL e1' ≤ e2 <|X|> {{R}}) ⊢ REL e1 ≤ e2 <|X|> {{R}}.
+  Proof. by intros ??; apply (rel_pure_step_l _ _ _ _ φ). Qed.
 
-  Lemma ewp_pure_step_r_with_mask E e1 e2 e2' φ n X R :
+  Lemma rel_pure_step_r_with_mask E e1 e2 e2' φ n X R :
     ↑specN ⊆ E →
     PureExec φ n e2 e2' →
     φ →
-    EWP e1 ≤ e2' @ E <|X|> {{R}} ⊢ EWP e1 ≤ e2 @ E <|X|> {{R}}.
+    REL e1 ≤ e2' @ E <|X|> {{R}} ⊢ REL e1 ≤ e2 @ E <|X|> {{R}}.
   Proof.
-    rewrite !ewp_unfold /ewp_pre.
-    iIntros (HE Hexec Hφ) "Hewp"; iIntros (k1 k2 S) "Hkwp".
+    rewrite !rel_unfold /rel_pre.
+    iIntros (HE Hexec Hφ) "Hrel"; iIntros (k1 k2 S) "Hkwp".
     iApply (obs_refines_pure_step_r_with_mask _ _ (fill k2 e2) (fill k2 e2')).
     { by apply HE. }
     { by apply Hφ. }
     { by apply pure_exec_fill. }
-    { by iApply "Hewp". }
+    { by iApply "Hrel". }
   Qed.
 
-  Lemma ewp_pure_step_r e1 e2 e2' X φ n R :
+  Lemma rel_pure_step_r e1 e2 e2' X φ n R :
     φ →
     PureExec φ n e2 e2' →
-    EWP e1 ≤ e2' <|X|> {{R}} ⊢ EWP e1 ≤ e2 <|X|> {{R}}.
+    REL e1 ≤ e2' <|X|> {{R}} ⊢ REL e1 ≤ e2 <|X|> {{R}}.
   Proof.
-    iIntros (Hφ Hexec) "Hewp".
-    by iApply ewp_pure_step_r_with_mask; auto.
+    iIntros (Hφ Hexec) "Hrel".
+    by iApply rel_pure_step_r_with_mask; auto.
   Qed.
 
-  Lemma ewp_pure_step_r' e1 e2 e2' φ n X R :
+  Lemma rel_pure_step_r' e1 e2 e2' φ n X R :
     PureExec φ n e2 e2' →
     φ →
-    EWP e1 ≤ e2' <|X|> {{R}} ⊢ EWP e1 ≤ e2 <|X|> {{R}}.
-  Proof. by intros ??; apply (ewp_pure_step_r _ _ e2' _ φ n). Qed.
+    REL e1 ≤ e2' <|X|> {{R}} ⊢ REL e1 ≤ e2 <|X|> {{R}}.
+  Proof. by intros ??; apply (rel_pure_step_r _ _ e2' _ φ n). Qed.
 
 
 
-  Lemma ewp_effect_l X k1 s1 e1 e2 R :
-    ▷ (∀ l1, is_label (DfracOwn 1) l1 ==∗ EWP fill k1 (lbl_subst s1 l1 e1) ≤ e2 <|X|> {{R}}) -∗
-    EWP fill k1 (Effect s1 e1) ≤ e2 <|X|> {{R}}.
+  Lemma rel_effect_l X k1 s1 e1 e2 R :
+    ▷ (∀ l1, is_label (DfracOwn 1) l1 ==∗ REL fill k1 (lbl_subst s1 l1 e1) ≤ e2 <|X|> {{R}}) -∗
+    REL fill k1 (Effect s1 e1) ≤ e2 <|X|> {{R}}.
   Proof.
-    rewrite !ewp_unfold /ewp_pre obs_refines_eq /obs_refines_def.
-    iIntros "Hewp" (k1' k2' S) "Hkwp %j %k2 #Hspec Hj".
+    rewrite !rel_unfold /rel_pre obs_refines_eq /obs_refines_def.
+    iIntros "Hrel" (k1' k2' S) "Hkwp %j %k2 #Hspec Hj".
     iEval (rewrite -fill_app).
     iApply wp_effect. iModIntro.
     iIntros "!> %l1 Hl1".
-    iMod ("Hewp" with "Hl1") as "Hewp".
-    rewrite !ewp_unfold /ewp_pre obs_refines_eq /obs_refines_def fill_app.
-    by iApply ("Hewp" with "Hkwp Hspec Hj").
+    iMod ("Hrel" with "Hl1") as "Hrel".
+    rewrite !rel_unfold /rel_pre obs_refines_eq /obs_refines_def fill_app.
+    by iApply ("Hrel" with "Hkwp Hspec Hj").
   Qed.
 
-  Lemma ewp_effect_r X R e1 k2 s2 e2 :
-    (∀ l2, spec_label (DfracOwn 1) l2 ==∗ EWP e1 ≤ fill k2 (lbl_subst s2 l2 e2) <|X|> {{R}}) -∗
-    EWP e1 ≤ fill k2 (Effect s2 e2) <|X|> {{R}}.
+  Lemma rel_effect_r X R e1 k2 s2 e2 :
+    (∀ l2, spec_label (DfracOwn 1) l2 ==∗ REL e1 ≤ fill k2 (lbl_subst s2 l2 e2) <|X|> {{R}}) -∗
+    REL e1 ≤ fill k2 (Effect s2 e2) <|X|> {{R}}.
   Proof.
-    rewrite !ewp_unfold /ewp_pre obs_refines_eq /obs_refines_def.
-    iIntros "Hewp %k1' %k2' %S Hkwp %j %k2'' #Hspec Hj".
+    rewrite !rel_unfold /rel_pre obs_refines_eq /obs_refines_def.
+    iIntros "Hrel %k1' %k2' %S Hkwp %j %k2'' #Hspec Hj".
     rewrite -!fill_app. iApply fupd_wp.
     iMod (step_alloc_label with "Hspec Hj") as (l) "[Hj Hl]"; first done.
     rewrite !fill_app.
-    iMod ("Hewp" with "Hl") as "Hewp".
-    rewrite ewp_unfold /ewp_pre obs_refines_eq /obs_refines_def.
-    iApply ("Hewp" with "Hkwp Hspec Hj").
+    iMod ("Hrel" with "Hl") as "Hrel".
+    rewrite rel_unfold /rel_pre obs_refines_eq /obs_refines_def.
+    iApply ("Hrel" with "Hkwp Hspec Hj").
   Qed.
 
-  Lemma ewp_fork_l X R k1 e1 e2 e2' i :
+  Lemma rel_fork_l X R k1 e1 e2 e2' i :
     ▷ i ⤇ e2 -∗
-    ▷ EWP e1 ≤ e2 <|iThyBot|> {{ _ ; _, True }} -∗
-    ▷ EWP fill k1 #() ≤ e2' <|X|> {{R}} -∗
-    EWP fill k1 (Fork e1) ≤ e2' <|X|> {{R}}.
+    ▷ REL e1 ≤ e2 <|iThyBot|> {{ _ ; _, True }} -∗
+    ▷ REL fill k1 #() ≤ e2' <|X|> {{R}} -∗
+    REL fill k1 (Fork e1) ≤ e2' <|X|> {{R}}.
   Proof.
-    rewrite !ewp_unfold /ewp_pre obs_refines_eq /obs_refines_def.
-    iIntros "Hi Hewp Hewp' %k1' %k2' %S Hkwp %j %k2'' #Hspec Hj".
+    rewrite !rel_unfold /rel_pre obs_refines_eq /obs_refines_def.
+    iIntros "Hi Hrel Hrel' %k1' %k2' %S Hkwp %j %k2'' #Hspec Hj".
     rewrite -!fill_app.
     iApply fupd_wp.
-    iApply (wp_fork with "[Hewp Hi]").
-    { iNext. iSpecialize ("Hewp" $! [] [] with "[]").
+    iApply (wp_fork with "[Hrel Hi]").
+    { iNext. iSpecialize ("Hrel" $! [] [] with "[]").
       { by iApply kwp_empty. }
-      iSpecialize ("Hewp" $! i [] with "Hspec Hi").
+      iSpecialize ("Hrel" $! i [] with "Hspec Hi").
       iApply fupd_wp.
-      by iApply (wp_strong_mono with "Hewp"); try auto.
+      by iApply (wp_strong_mono with "Hrel"); try auto.
     }
     rewrite !fill_app. iModIntro. iModIntro. iNext.
     iApply fupd_wp.
-    by iApply ("Hewp'" with "Hkwp Hspec Hj").
+    by iApply ("Hrel'" with "Hkwp Hspec Hj").
   Qed.
 
-  Lemma ewp_logical_fork X R S k1 k2 e1 e2 e2' i :
+  Lemma rel_logical_fork X R S k1 k2 e1 e2 e2' i :
     i ⤇ fill k2 e2 -∗
-    EWP e1 ≤ e2 <|iThyBot|> {{R}} -∗
-    (∀ (v1 v2 : val), R v1 v2 -∗ i ⤇ fill k2 v2 -∗ EWP fill k1 v1 ≤ e2' <|X|> {{S}}) -∗
-    EWP fill k1 e1 ≤ e2' <|X|> {{S}}.
+    REL e1 ≤ e2 <|iThyBot|> {{R}} -∗
+    (∀ (v1 v2 : val), R v1 v2 -∗ i ⤇ fill k2 v2 -∗ REL fill k1 v1 ≤ e2' <|X|> {{S}}) -∗
+    REL fill k1 e1 ≤ e2' <|X|> {{S}}.
   Proof.
-    rewrite !ewp_unfold /ewp_pre obs_refines_eq /obs_refines_def.
-    iIntros "Hi Hewp Hewp' %k1' %k2' %T Hkwp %j %k2'' #Hspec Hj".
-    iSpecialize ("Hewp" $! [] [] with "[]").
+    rewrite !rel_unfold /rel_pre obs_refines_eq /obs_refines_def.
+    iIntros "Hi Hrel Hrel' %k1' %k2' %T Hkwp %j %k2'' #Hspec Hj".
+    iSpecialize ("Hrel" $! [] [] with "[]").
     { by iApply kwp_empty. }
-    iSpecialize ("Hewp" $! i k2 with "Hspec Hi").
+    iSpecialize ("Hrel" $! i k2 with "Hspec Hi").
     iEval (rewrite -fill_app).
     iApply wp_bind.
-    iApply (wp_strong_mono with "Hewp"); auto.
+    iApply (wp_strong_mono with "Hrel"); auto.
     iIntros "%v1 [%v2 [Hi HR]] !>".
     rewrite fill_app.
-    iSpecialize ("Hewp'" $! v1 with "HR Hi").
-    rewrite !ewp_unfold /ewp_pre obs_refines_eq /obs_refines_def.
+    iSpecialize ("Hrel'" $! v1 with "HR Hi").
+    rewrite !rel_unfold /rel_pre obs_refines_eq /obs_refines_def.
     iApply fupd_wp.
-    by iApply ("Hewp'" with "Hkwp Hspec Hj").
+    by iApply ("Hrel'" with "Hkwp Hspec Hj").
   Qed.
 
-  Lemma ewp_logical_fork' X R k1 k2 e1 e2 e2' i :
+  Lemma rel_logical_fork' X R k1 k2 e1 e2 e2' i :
     i ⤇ fill k2 e2 -∗
-    EWP e1 ≤ e2 <|iThyBot|> {{ v1; v2, i ⤇ fill k2 v2 -∗ EWP fill k1 v1 ≤ e2' <|X|> {{R}} }} -∗
-    EWP fill k1 e1 ≤ e2' <|X|> {{R}}.
+    REL e1 ≤ e2 <|iThyBot|> {{ v1; v2, i ⤇ fill k2 v2 -∗ REL fill k1 v1 ≤ e2' <|X|> {{R}} }} -∗
+    REL fill k1 e1 ≤ e2' <|X|> {{R}}.
   Proof.
-    iIntros "Hi Hewp".
-    iApply (ewp_logical_fork with "Hi Hewp").
-    iIntros (??) "Hewp Hi". by iApply "Hewp".
+    iIntros "Hi Hrel".
+    iApply (rel_logical_fork with "Hi Hrel").
+    iIntros (??) "Hrel Hi". by iApply "Hrel".
   Qed.
 
-  Lemma ewp_fork_r X R e1 k2 e2 :
-    (∀ i, i ⤇ e2 -∗ EWP e1 ≤ fill k2 #() <|X|> {{R}}) -∗
-    EWP e1 ≤ fill k2 (Fork e2) <|X|> {{R}}.
+  Lemma rel_fork_r X R e1 k2 e2 :
+    (∀ i, i ⤇ e2 -∗ REL e1 ≤ fill k2 #() <|X|> {{R}}) -∗
+    REL e1 ≤ fill k2 (Fork e2) <|X|> {{R}}.
   Proof.
-    rewrite (ewp_unfold _ _ (_ (Fork _))).
-    rewrite /ewp_pre obs_refines_eq /obs_refines_def.
-    iIntros "Hewp %k1' %k2' %S Hkwp %j %k2'' #Hspec Hj".
+    rewrite (rel_unfold _ _ (_ (Fork _))).
+    rewrite /rel_pre obs_refines_eq /obs_refines_def.
+    iIntros "Hrel %k1' %k2' %S Hkwp %j %k2'' #Hspec Hj".
     rewrite -!fill_app.
     iApply fupd_wp.
     iMod (step_fork with "Hspec Hj") as (i) "[Hj Hi]". { done. }
     iModIntro.
-    iSpecialize ("Hewp" with "Hi").
-    rewrite ewp_unfold /ewp_pre obs_refines_eq /obs_refines_def.
+    iSpecialize ("Hrel" with "Hi").
+    rewrite rel_unfold /rel_pre obs_refines_eq /obs_refines_def.
     rewrite !fill_app.
-    by iApply ("Hewp" with "Hkwp Hspec Hj").
+    by iApply ("Hrel" with "Hkwp Hspec Hj").
   Qed.
 
-  Lemma ewp_thread_swap e1 e2 i k3 e3 X R :
+  Lemma rel_thread_swap e1 e2 i k3 e3 X R :
     i ⤇ fill k3 e3 -∗
     (∀ j k, j ⤇ fill k e2 -∗
-       EWP e1 ≤ e3 <|iThyBot|> {{ v1; _, ∃ (v2 : val), j ⤇ fill k v2 ∗ R v1 v2 }}
+       REL e1 ≤ e3 <|iThyBot|> {{ v1; _, ∃ (v2 : val), j ⤇ fill k v2 ∗ R v1 v2 }}
     ) -∗
-    EWP e1 ≤ e2 <|X|> {{R}}.
+    REL e1 ≤ e2 <|X|> {{R}}.
   Proof.
-    rewrite !ewp_unfold /ewp_pre obs_refines_eq /obs_refines_def.
+    rewrite !rel_unfold /rel_pre obs_refines_eq /obs_refines_def.
     iIntros "Hi He13" (k1 k2 S) "Hkwp". iIntros (j k) "#Hspec Hj".
     rewrite -!fill_app.
     iSpecialize ("He13" with "Hj").
-    rewrite !ewp_unfold /ewp_pre obs_refines_eq /obs_refines_def.
+    rewrite !rel_unfold /rel_pre obs_refines_eq /obs_refines_def.
     iSpecialize ("He13" with "[]"). { by iApply kwp_empty. }
     iSpecialize ("He13" $! i k3 with "Hspec").
     rewrite -!fill_app app_nil_r //=.
@@ -1184,58 +1184,58 @@ Section baze_rules.
     by iApply ("Hvalue" with "Hspec Hj").
   Qed.
 
-  Lemma ewp_handle_os_l k k' hs (l : label) (v : val) (h ret : expr) e2 X R :
+  Lemma rel_handle_os_l k k' hs (l : label) (v : val) (h ret : expr) e2 X R :
     let c := match hs with Deep => HandleCtx hs OS l h ret :: k' | Shallow => k' end in
     l ∉ ectx_labels k' →
-    (▷ ∀ r, unshot r -∗ EWP fill k (App (App h v) (ContV r c)) ≤ e2 <|X|> {{R}}) -∗
-    EWP fill k (Handle hs OS (EffLabel l) (fill k' (Do (EffLabel l) v)) h ret) ≤ e2 <|X|> {{R}}.
+    (▷ ∀ r, unshot r -∗ REL fill k (App (App h v) (ContV r c)) ≤ e2 <|X|> {{R}}) -∗
+    REL fill k (Handle hs OS (EffLabel l) (fill k' (Do (EffLabel l) v)) h ret) ≤ e2 <|X|> {{R}}.
   Proof.
-    iIntros (? Hnot_in_k') "Hewp".
-    rewrite !ewp_unfold /ewp_pre obs_refines_eq /obs_refines_def.
+    iIntros (? Hnot_in_k') "Hrel".
+    rewrite !rel_unfold /rel_pre obs_refines_eq /obs_refines_def.
     iIntros "%k1 %k2 %S Hkwp %j %k2' #Hspec Hj". iEval (rewrite -fill_app).
     iApply wp_handle_os; first done. iModIntro.
     iIntros "!> %r Hr".
-    iSpecialize ("Hewp" with "Hr").
-    rewrite !ewp_unfold /ewp_pre obs_refines_eq /obs_refines_def fill_app.
+    iSpecialize ("Hrel" with "Hr").
+    rewrite !rel_unfold /rel_pre obs_refines_eq /obs_refines_def fill_app.
     iApply fupd_wp.
-    by iApply ("Hewp" with "Hkwp Hspec Hj").
+    by iApply ("Hrel" with "Hkwp Hspec Hj").
   Qed.
 
-  Lemma ewp_handle_os_r k k' hs (l : label) (v : val) (h ret : expr) e1 X R :
+  Lemma rel_handle_os_r k k' hs (l : label) (v : val) (h ret : expr) e1 X R :
     let c := match hs with Deep => HandleCtx hs OS l h ret :: k' | Shallow => k' end in
     l ∉ ectx_labels k' →
-    (∀ r, unshotₛ r -∗ EWP e1 ≤ fill k (App (App h v) (ContV r c)) <|X|> {{R}}) -∗
-    EWP e1 ≤ fill k (Handle hs OS (EffLabel l) (fill k' (Do (EffLabel l) v)) h ret) <|X|> {{R}}.
+    (∀ r, unshotₛ r -∗ REL e1 ≤ fill k (App (App h v) (ContV r c)) <|X|> {{R}}) -∗
+    REL e1 ≤ fill k (Handle hs OS (EffLabel l) (fill k' (Do (EffLabel l) v)) h ret) <|X|> {{R}}.
   Proof.
-    iIntros (? Hnot_in_k') "Hewp".
-    rewrite !ewp_unfold /ewp_pre obs_refines_eq /obs_refines_def.
+    iIntros (? Hnot_in_k') "Hrel".
+    rewrite !rel_unfold /rel_pre obs_refines_eq /obs_refines_def.
     iIntros "%k1 %k2 %S Hkwp %j %k2' #Hspec Hj".
     rewrite -!fill_app.
     iApply fupd_wp.
     iMod (step_handle_os ⊤ with "Hspec Hj") as "[%r [Hj Hr]]"; try done.
-    iSpecialize ("Hewp" with "Hr").
-    rewrite !ewp_unfold /ewp_pre obs_refines_eq /obs_refines_def !fill_app.
-    iApply ("Hewp" with "Hkwp Hspec Hj").
+    iSpecialize ("Hrel" with "Hr").
+    rewrite !rel_unfold /rel_pre obs_refines_eq /obs_refines_def !fill_app.
+    iApply ("Hrel" with "Hkwp Hspec Hj").
   Qed.
 
-  Lemma ewp_cont_l k k' (v : val) r e2 X R :
+  Lemma rel_cont_l k k' (v : val) r e2 X R :
     ▷ unshot r -∗
-    ▷ EWP fill k (fill k' v) ≤ e2 <|X|> {{R}} -∗
-    EWP fill k (App (ContV r k') v) ≤ e2 <|X|> {{R}}.
+    ▷ REL fill k (fill k' v) ≤ e2 <|X|> {{R}} -∗
+    REL fill k (App (ContV r k') v) ≤ e2 <|X|> {{R}}.
   Proof.
-    rewrite !ewp_unfold /ewp_pre obs_refines_eq /obs_refines_def.
+    rewrite !rel_unfold /rel_pre obs_refines_eq /obs_refines_def.
     iIntros "Hr Hwp %k1 %k2 %S Hkwp %j %k2' #Hspec Hj". iEval (rewrite -fill_app).
     iApply (wp_cont with "Hr"). iModIntro. iNext. rewrite fill_app.
     iApply fupd_wp.
     by iApply ("Hwp" with "Hkwp Hspec Hj").
   Qed.
 
-  Lemma ewp_cont_r k k' (v : val) r e1 X R :
+  Lemma rel_cont_r k k' (v : val) r e1 X R :
     unshotₛ r -∗ 
-    EWP e1 ≤ fill k (fill k' v) <|X|> {{R}} -∗
-    EWP e1 ≤ fill k (App (ContV r k') v) <|X|> {{R}}.
+    REL e1 ≤ fill k (fill k' v) <|X|> {{R}} -∗
+    REL e1 ≤ fill k (App (ContV r k') v) <|X|> {{R}}.
   Proof.
-    rewrite !ewp_unfold /ewp_pre obs_refines_eq /obs_refines_def.
+    rewrite !rel_unfold /rel_pre obs_refines_eq /obs_refines_def.
     iIntros "Hr Hwp %k1 %k2 %S Hkwp %j %k2' #Hspec Hj". iEval (rewrite -!fill_app) in "Hj".
     iApply fupd_wp.
     iMod (step_cont with "Hspec Hr Hj") as "Hj"; first done.
@@ -1243,333 +1243,333 @@ Section baze_rules.
     iApply ("Hwp" with "Hkwp Hspec Hj").
   Qed.
 
-  Lemma ewp_allocN_l X R k1 (n1 : Z) v1 e2 :
+  Lemma rel_allocN_l X R k1 (n1 : Z) v1 e2 :
     (0 < n1)%Z →
     ▷ (∀ l1,
         ([∗ list] i ∈ seq 0 (Z.to_nat n1),
           (l1 +ₗ (i : nat)) ↦ v1 ∗ meta_token (l1 +ₗ (i : nat)) ⊤
          ) -∗
-        EWP fill k1 #l1 ≤ e2 <|X|> {{R}}) -∗
-    EWP fill k1 (AllocN #n1 v1) ≤ e2 <|X|> {{R}}.
+        REL fill k1 #l1 ≤ e2 <|X|> {{R}}) -∗
+    REL fill k1 (AllocN #n1 v1) ≤ e2 <|X|> {{R}}.
   Proof.
-    rewrite !ewp_unfold /ewp_pre obs_refines_eq /obs_refines_def.
-    iIntros "%Hgt_0 Hewp %k1' %k2' %S Hkwp %j %k2'' #Hspec Hj".
+    rewrite !rel_unfold /rel_pre obs_refines_eq /obs_refines_def.
+    iIntros "%Hgt_0 Hrel %k1' %k2' %S Hkwp %j %k2'' #Hspec Hj".
     iEval (rewrite -fill_app).
     iApply wp_allocN; first done. iModIntro.
     iIntros "!> %l1 Hpoints_to".
-    iSpecialize ("Hewp" with "Hpoints_to").
-    rewrite ewp_unfold /ewp_pre obs_refines_eq /obs_refines_eq fill_app.
+    iSpecialize ("Hrel" with "Hpoints_to").
+    rewrite rel_unfold /rel_pre obs_refines_eq /obs_refines_eq fill_app.
     iApply fupd_wp.
-    by iApply ("Hewp" with "Hkwp Hspec Hj").
+    by iApply ("Hrel" with "Hkwp Hspec Hj").
   Qed.
 
-  Lemma ewp_alloc_l X R k1 v1 e2 :
-    ▷ (∀ l1, l1 ↦ v1 -∗ meta_token l1 ⊤ -∗ EWP fill k1 #l1 ≤ e2 <|X|> {{R}}) -∗
-    EWP fill k1 (ref v1) ≤ e2 <|X|> {{R}}.
+  Lemma rel_alloc_l X R k1 v1 e2 :
+    ▷ (∀ l1, l1 ↦ v1 -∗ meta_token l1 ⊤ -∗ REL fill k1 #l1 ≤ e2 <|X|> {{R}}) -∗
+    REL fill k1 (ref v1) ≤ e2 <|X|> {{R}}.
   Proof.
-    iIntros "Hewp". iApply ewp_allocN_l; first lia.
+    iIntros "Hrel". iApply rel_allocN_l; first lia.
     iIntros "!> /=" (l) "[[Hl Hm] _]". rewrite Loc.add_0.
-    iApply ("Hewp" with "Hl Hm").
+    iApply ("Hrel" with "Hl Hm").
   Qed.
 
-  Lemma ewp_alloc_r X R e1 k2 v2 :
-    (∀ l2, l2 ↦ₛ v2 -∗ EWP e1 ≤ fill k2 #l2 <|X|> {{R}}) -∗
-    EWP e1 ≤ fill k2 (ref v2) <|X|> {{R}}.
+  Lemma rel_alloc_r X R e1 k2 v2 :
+    (∀ l2, l2 ↦ₛ v2 -∗ REL e1 ≤ fill k2 #l2 <|X|> {{R}}) -∗
+    REL e1 ≤ fill k2 (ref v2) <|X|> {{R}}.
   Proof.
-    rewrite !ewp_unfold /ewp_pre obs_refines_eq /obs_refines_def.
-    iIntros "Hewp %k1' %k2' %S Hkwp %j %k2'' #Hspec Hj".
+    rewrite !rel_unfold /rel_pre obs_refines_eq /obs_refines_def.
+    iIntros "Hrel %k1' %k2' %S Hkwp %j %k2'' #Hspec Hj".
     rewrite -!fill_app.
     iApply fupd_wp.
     iMod (step_alloc with "Hspec Hj") as (l2) "[Hj Hl2]"; first done.
-    iSpecialize ("Hewp" with "Hl2").
-    rewrite ewp_unfold /ewp_pre obs_refines_eq /obs_refines_eq !fill_app.
-    iApply ("Hewp" with "Hkwp Hspec Hj").
+    iSpecialize ("Hrel" with "Hl2").
+    rewrite rel_unfold /rel_pre obs_refines_eq /obs_refines_eq !fill_app.
+    iApply ("Hrel" with "Hkwp Hspec Hj").
   Qed.
 
-  Lemma ewp_load_l X R k1 l1 dq1 v1 e2 :
+  Lemma rel_load_l X R k1 l1 dq1 v1 e2 :
     ▷ l1 ↦{dq1} v1 -∗
-    ▷ (l1 ↦{dq1} v1 -∗ EWP fill k1 v1 ≤ e2 <|X|> {{R}}) -∗
-    EWP fill k1 (! #l1) ≤ e2 <|X|> {{R}}.
+    ▷ (l1 ↦{dq1} v1 -∗ REL fill k1 v1 ≤ e2 <|X|> {{R}}) -∗
+    REL fill k1 (! #l1) ≤ e2 <|X|> {{R}}.
   Proof.
-    rewrite !ewp_unfold /ewp_pre obs_refines_eq /obs_refines_def.
-    iIntros "Hl1 Hewp %k1' %k2' %S Hkwp %j %k2'' #Hspec Hj".
+    rewrite !rel_unfold /rel_pre obs_refines_eq /obs_refines_def.
+    iIntros "Hl1 Hrel %k1' %k2' %S Hkwp %j %k2'' #Hspec Hj".
     iEval (rewrite -fill_app).
     iApply (wp_load with "Hl1").
     iIntros "!> !> Hl1". rewrite fill_app.
     iApply fupd_wp.
-    iApply ("Hewp" with "Hl1 Hkwp Hspec Hj").
+    iApply ("Hrel" with "Hl1 Hkwp Hspec Hj").
   Qed.
 
-  Lemma ewp_load_l_inv' K E l q e2 X R :
+  Lemma rel_load_l_inv' K E l q e2 X R :
     (|={⊤,E}=> ∃ v',
       ▷(l ↦{q} v') ∗
-      ▷(l ↦{q} v' -∗ (EWP fill K (of_val v') ≤ e2 @ E <|X|> {{R}})))%I
-    ⊢ EWP fill K (! #l) ≤ e2 <|X|> {{R}}.
+      ▷(l ↦{q} v' -∗ (REL fill K (of_val v') ≤ e2 @ E <|X|> {{R}})))%I
+    ⊢ REL fill K (! #l) ≤ e2 <|X|> {{R}}.
   Proof.
-    iIntros "Hewp".
-    iApply (ewp_atomic_l E). iMod "Hewp" as "[%v [Hl Hewp]]". iModIntro.
+    iIntros "Hrel".
+    iApply (rel_atomic_l E). iMod "Hrel" as "[%v [Hl Hrel]]". iModIntro.
     iApply (wp_load [] with "Hl"). iNext. iIntros "Hl".
-    iApply wp_value. by iApply "Hewp".
+    iApply wp_value. by iApply "Hrel".
   Qed.
 
-  Lemma ewp_load_l_inv N P K l q e2 X R :
+  Lemma rel_load_l_inv N P K l q e2 X R :
     inv N P -∗
     (▷ P -∗ closeInv N P -∗
      ∃ v',
      ▷ l ↦{q} v' ∗
-     ▷ (l ↦{q} v' -∗ (EWP fill K (of_val v') ≤ e2 @ (⊤ ∖ ↑N) <|X|> {{R}}))) -∗
-    EWP fill K (! #l) ≤ e2 <|X|> {{R}}.
+     ▷ (l ↦{q} v' -∗ (REL fill K (of_val v') ≤ e2 @ (⊤ ∖ ↑N) <|X|> {{R}}))) -∗
+    REL fill K (! #l) ≤ e2 <|X|> {{R}}.
   Proof.
-    iIntros "Hinv Hewp".
-    iApply (ewp_load_l_inv' _ (⊤ ∖ ↑N)).
+    iIntros "Hinv Hrel".
+    iApply (rel_load_l_inv' _ (⊤ ∖ ↑N)).
     iMod (inv_acc with "Hinv") as "[HP Hclose]"; auto.
     iModIntro.
-    iDestruct ("Hewp" with "HP Hclose") as "[%v' [Hl Hewp]]".
+    iDestruct ("Hrel" with "HP Hclose") as "[%v' [Hl Hrel]]".
     iExists v'. by iFrame.
   Qed.
 
-  Lemma ewp_load_r_with_mask E X R e1 k2 l2 dq2 v2 :
+  Lemma rel_load_r_with_mask E X R e1 k2 l2 dq2 v2 :
     ↑specN ⊆ E →
     l2 ↦ₛ{dq2} v2 -∗
-    (l2 ↦ₛ{dq2} v2 -∗ EWP e1 ≤ fill k2 v2 @ E <|X|> {{R}}) -∗
-    EWP e1 ≤ fill k2 (! #l2) @ E <|X|> {{R}}.
+    (l2 ↦ₛ{dq2} v2 -∗ REL e1 ≤ fill k2 v2 @ E <|X|> {{R}}) -∗
+    REL e1 ≤ fill k2 (! #l2) @ E <|X|> {{R}}.
   Proof.
-    rewrite !ewp_unfold /ewp_pre obs_refines_eq /obs_refines_def.
-    iIntros (HE) "Hl2 Hewp %k1' %k2' %S Hkwp %j %k2'' #Hspec Hj".
+    rewrite !rel_unfold /rel_pre obs_refines_eq /obs_refines_def.
+    iIntros (HE) "Hl2 Hrel %k1' %k2' %S Hkwp %j %k2'' #Hspec Hj".
     rewrite -!fill_app.
     iMod (step_load with "Hspec Hj Hl2") as "[Hj Hl2]"; first done.
     rewrite !fill_app.
-    iApply ("Hewp" with "Hl2 Hkwp Hspec Hj").
+    iApply ("Hrel" with "Hl2 Hkwp Hspec Hj").
   Qed.
 
-  Lemma ewp_load_r X R e1 k2 l2 dq2 v2 :
+  Lemma rel_load_r X R e1 k2 l2 dq2 v2 :
     l2 ↦ₛ{dq2} v2 -∗
-    (l2 ↦ₛ{dq2} v2 -∗ EWP e1 ≤ fill k2 v2 <|X|> {{R}}) -∗
-    EWP e1 ≤ fill k2 (! #l2) <|X|> {{R}}.
-  Proof. by apply ewp_load_r_with_mask. Qed.
+    (l2 ↦ₛ{dq2} v2 -∗ REL e1 ≤ fill k2 v2 <|X|> {{R}}) -∗
+    REL e1 ≤ fill k2 (! #l2) <|X|> {{R}}.
+  Proof. by apply rel_load_r_with_mask. Qed.
 
-  Lemma ewp_store_l X R k1 l1 v1 w1 e2 :
+  Lemma rel_store_l X R k1 l1 v1 w1 e2 :
     ▷ l1 ↦ v1 -∗
-    ▷ (l1 ↦ w1 -∗ EWP fill k1 #() ≤ e2 <|X|> {{R}}) -∗
-    EWP fill k1 (#l1 <- w1) ≤ e2 <|X|> {{R}}.
+    ▷ (l1 ↦ w1 -∗ REL fill k1 #() ≤ e2 <|X|> {{R}}) -∗
+    REL fill k1 (#l1 <- w1) ≤ e2 <|X|> {{R}}.
   Proof.
-    rewrite !ewp_unfold /ewp_pre obs_refines_eq /obs_refines_def.
-    iIntros "Hl1 Hewp %k1' %k2' %S Hkwp %j %k2'' #Hspec Hj".
+    rewrite !rel_unfold /rel_pre obs_refines_eq /obs_refines_def.
+    iIntros "Hl1 Hrel %k1' %k2' %S Hkwp %j %k2'' #Hspec Hj".
     iEval (rewrite -fill_app).
     iApply (wp_store with "Hl1").
     iIntros "!> !> Hl1". rewrite fill_app.
     iApply fupd_wp.
-    iApply ("Hewp" with "Hl1 Hkwp Hspec Hj").
+    iApply ("Hrel" with "Hl1 Hkwp Hspec Hj").
   Qed.
 
-  Lemma ewp_store_r_with_mask E X R e1 k2 l2 v2 w2 :
+  Lemma rel_store_r_with_mask E X R e1 k2 l2 v2 w2 :
     nclose specN ⊆ E →
     l2 ↦ₛ v2 -∗
-    (l2 ↦ₛ w2 -∗ EWP e1 ≤ fill k2 #() @ E <|X|> {{R}}) -∗
-    EWP e1 ≤ fill k2 (#l2 <- w2) @ E <|X|> {{R}}.
+    (l2 ↦ₛ w2 -∗ REL e1 ≤ fill k2 #() @ E <|X|> {{R}}) -∗
+    REL e1 ≤ fill k2 (#l2 <- w2) @ E <|X|> {{R}}.
   Proof.
-    rewrite !ewp_unfold /ewp_pre obs_refines_eq /obs_refines_def.
-    iIntros (HE) "Hl2 Hewp %k1' %k2' %S Hkwp %j %k2'' #Hspec Hj".
+    rewrite !rel_unfold /rel_pre obs_refines_eq /obs_refines_def.
+    iIntros (HE) "Hl2 Hrel %k1' %k2' %S Hkwp %j %k2'' #Hspec Hj".
     rewrite -!fill_app.
     iMod (step_store with "Hspec Hj Hl2") as "[Hj Hl2]"; first done.
     rewrite !fill_app.
-    iApply ("Hewp" with "Hl2 Hkwp Hspec Hj").
+    iApply ("Hrel" with "Hl2 Hkwp Hspec Hj").
   Qed.
 
-  Lemma ewp_store_r X R e1 k2 l2 v2 w2 :
+  Lemma rel_store_r X R e1 k2 l2 v2 w2 :
     l2 ↦ₛ v2 -∗
-    (l2 ↦ₛ w2 -∗ EWP e1 ≤ fill k2 #() <|X|> {{R}}) -∗
-    EWP e1 ≤ fill k2 (#l2 <- w2) <|X|> {{R}}.
-  Proof. by apply ewp_store_r_with_mask. Qed.
+    (l2 ↦ₛ w2 -∗ REL e1 ≤ fill k2 #() <|X|> {{R}}) -∗
+    REL e1 ≤ fill k2 (#l2 <- w2) <|X|> {{R}}.
+  Proof. by apply rel_store_r_with_mask. Qed.
 
-  Lemma ewp_xchg_l X R k1 l1 v1 w1 e2 :
+  Lemma rel_xchg_l X R k1 l1 v1 w1 e2 :
     ▷ l1 ↦ v1 -∗
-    ▷ (l1 ↦ w1 -∗ EWP fill k1 v1 ≤ e2 <|X|> {{R}}) -∗
-    EWP fill k1 (Xchg #l1 w1) ≤ e2 <|X|> {{R}}.
+    ▷ (l1 ↦ w1 -∗ REL fill k1 v1 ≤ e2 <|X|> {{R}}) -∗
+    REL fill k1 (Xchg #l1 w1) ≤ e2 <|X|> {{R}}.
   Proof.
-    rewrite !ewp_unfold /ewp_pre obs_refines_eq /obs_refines_def.
-    iIntros "Hl1 Hewp %k1' %k2' %S Hkwp %j %k2'' #Hspec Hj".
+    rewrite !rel_unfold /rel_pre obs_refines_eq /obs_refines_def.
+    iIntros "Hl1 Hrel %k1' %k2' %S Hkwp %j %k2'' #Hspec Hj".
     iEval (rewrite -fill_app).
     iApply (wp_xchg with "Hl1").
     iIntros "!> !> Hl1". rewrite fill_app.
     iApply fupd_wp.
-    iApply ("Hewp" with "Hl1 Hkwp Hspec Hj").
+    iApply ("Hrel" with "Hl1 Hkwp Hspec Hj").
   Qed.
 
-  Lemma ewp_xchg_r X R e1 k2 l2 v2 w2 :
+  Lemma rel_xchg_r X R e1 k2 l2 v2 w2 :
     l2 ↦ₛ v2 -∗
-    (l2 ↦ₛ w2 -∗ EWP e1 ≤ fill k2 v2 <|X|> {{R}}) -∗
-    EWP e1 ≤ fill k2 (Xchg #l2 w2) <|X|> {{R}}.
+    (l2 ↦ₛ w2 -∗ REL e1 ≤ fill k2 v2 <|X|> {{R}}) -∗
+    REL e1 ≤ fill k2 (Xchg #l2 w2) <|X|> {{R}}.
   Proof.
-    rewrite !ewp_unfold /ewp_pre obs_refines_eq /obs_refines_def.
-    iIntros "Hl2 Hewp %k1' %k2' %S Hkwp %j %k2'' #Hspec Hj".
+    rewrite !rel_unfold /rel_pre obs_refines_eq /obs_refines_def.
+    iIntros "Hl2 Hrel %k1' %k2' %S Hkwp %j %k2'' #Hspec Hj".
     rewrite -!fill_app.
     iApply fupd_wp.
     iMod (step_xchg with "Hspec Hj Hl2") as "[Hj Hl2]"; first done.
     rewrite !fill_app.
-    iApply ("Hewp" with "Hl2 Hkwp Hspec Hj").
+    iApply ("Hrel" with "Hl2 Hkwp Hspec Hj").
   Qed.
 
-  Lemma ewp_free_l X R k1 l1 v1 e2 :
+  Lemma rel_free_l X R k1 l1 v1 e2 :
     ▷ l1 ↦ v1 -∗
-    ▷ EWP fill k1 #() ≤ e2 <|X|> {{R}} -∗
-    EWP fill k1 (Free #l1) ≤ e2 <|X|> {{R}}.
+    ▷ REL fill k1 #() ≤ e2 <|X|> {{R}} -∗
+    REL fill k1 (Free #l1) ≤ e2 <|X|> {{R}}.
   Proof.
-    rewrite !ewp_unfold /ewp_pre obs_refines_eq /obs_refines_def.
-    iIntros "Hl1 Hewp %k1' %k2' %S Hkwp %j %k2'' #Hspec Hj".
+    rewrite !rel_unfold /rel_pre obs_refines_eq /obs_refines_def.
+    iIntros "Hl1 Hrel %k1' %k2' %S Hkwp %j %k2'' #Hspec Hj".
     iEval (rewrite -fill_app).
     iApply (wp_free with "Hl1"). iModIntro. iNext.
     rewrite fill_app.
-    iApply fupd_wp. iApply ("Hewp" with "Hkwp Hspec Hj").
+    iApply fupd_wp. iApply ("Hrel" with "Hkwp Hspec Hj").
   Qed.
 
-  Lemma ewp_free_r X R e1 k2 l2 v2 :
+  Lemma rel_free_r X R e1 k2 l2 v2 :
     l2 ↦ₛ v2 -∗
-    EWP e1 ≤ fill k2 #() <|X|> {{R}} -∗
-    EWP e1 ≤ fill k2 (Free #l2) <|X|> {{R}}.
+    REL e1 ≤ fill k2 #() <|X|> {{R}} -∗
+    REL e1 ≤ fill k2 (Free #l2) <|X|> {{R}}.
   Proof.
-    rewrite !ewp_unfold /ewp_pre obs_refines_eq /obs_refines_def.
-    iIntros "Hl2 Hewp %k1' %k2' %S Hkwp %j %k2'' #Hspec Hj".
+    rewrite !rel_unfold /rel_pre obs_refines_eq /obs_refines_def.
+    iIntros "Hl2 Hrel %k1' %k2' %S Hkwp %j %k2'' #Hspec Hj".
     rewrite -!fill_app.
     iApply fupd_wp.
     iMod (step_free with "Hspec Hj Hl2") as "Hj"; first done.
     rewrite !fill_app.
-    iApply ("Hewp" with "Hkwp Hspec Hj").
+    iApply ("Hrel" with "Hkwp Hspec Hj").
   Qed.
 
-  Lemma ewp_faa_l X R k1 l1 (n1 m1 : Z) e2 :
+  Lemma rel_faa_l X R k1 l1 (n1 m1 : Z) e2 :
     ▷ l1 ↦ #n1 -∗
-    ▷ (l1 ↦ #(n1 + m1) -∗ EWP fill k1 #n1 ≤ e2 <|X|> {{R}}) -∗
-    EWP fill k1 (FAA #l1 #m1) ≤ e2 <|X|> {{R}}.
+    ▷ (l1 ↦ #(n1 + m1) -∗ REL fill k1 #n1 ≤ e2 <|X|> {{R}}) -∗
+    REL fill k1 (FAA #l1 #m1) ≤ e2 <|X|> {{R}}.
   Proof.
-    rewrite !ewp_unfold /ewp_pre obs_refines_eq /obs_refines_def.
-    iIntros "Hl1 Hewp %k1' %k2' %S Hkwp %j %k2'' #Hspec Hj".
+    rewrite !rel_unfold /rel_pre obs_refines_eq /obs_refines_def.
+    iIntros "Hl1 Hrel %k1' %k2' %S Hkwp %j %k2'' #Hspec Hj".
     iEval (rewrite -fill_app).
     iApply (wp_faa with "Hl1").
     iIntros "!> !> Hl1".
     rewrite !fill_app.
-    iApply fupd_wp. iApply ("Hewp" with "Hl1 Hkwp Hspec Hj").
+    iApply fupd_wp. iApply ("Hrel" with "Hl1 Hkwp Hspec Hj").
   Qed.
 
-  Lemma ewp_faa_l_inv' k1 E l1 (m1 : Z) e2 X R :
+  Lemma rel_faa_l_inv' k1 E l1 (m1 : Z) e2 X R :
     (|={⊤,E}=> ∃ (n1 : Z),
       ▷ l1 ↦ #n1 ∗
-      ▷ (l1 ↦ #(n1 + m1) -∗ (EWP fill k1 #n1 ≤ e2 @ E <|X|> {{R}})))%I
-    ⊢ EWP fill k1 (FAA #l1 #m1) ≤ e2 <|X|> {{R}}.
+      ▷ (l1 ↦ #(n1 + m1) -∗ (REL fill k1 #n1 ≤ e2 @ E <|X|> {{R}})))%I
+    ⊢ REL fill k1 (FAA #l1 #m1) ≤ e2 <|X|> {{R}}.
   Proof.
-    iIntros "Hewp".
-    iApply (ewp_atomic_l E). iMod "Hewp" as "[%n1 [Hl Hewp]]". iModIntro.
+    iIntros "Hrel".
+    iApply (rel_atomic_l E). iMod "Hrel" as "[%n1 [Hl Hrel]]". iModIntro.
     iApply (wp_faa [] with "Hl"). iNext. iIntros "Hl".
-    iApply wp_value. by iApply "Hewp".
+    iApply wp_value. by iApply "Hrel".
   Qed.
 
-  Lemma ewp_faa_l_inv N P k1 l1 (m1 : Z) e2 X R :
+  Lemma rel_faa_l_inv N P k1 l1 (m1 : Z) e2 X R :
     inv N P -∗
     (▷ P -∗ closeInv N P -∗
      ∃ (n1 : Z),
      ▷ l1 ↦ #n1 ∗
-     ▷ (l1 ↦ #(n1 + m1) -∗ (EWP fill k1 #n1 ≤ e2 @ (⊤ ∖ ↑N) <|X|> {{R}}))) -∗
-    EWP fill k1 (FAA #l1 #m1) ≤ e2 <|X|> {{R}}.
+     ▷ (l1 ↦ #(n1 + m1) -∗ (REL fill k1 #n1 ≤ e2 @ (⊤ ∖ ↑N) <|X|> {{R}}))) -∗
+    REL fill k1 (FAA #l1 #m1) ≤ e2 <|X|> {{R}}.
   Proof.
-    iIntros "Hinv Hewp".
-    iApply (ewp_faa_l_inv' _ (⊤ ∖ ↑N)).
+    iIntros "Hinv Hrel".
+    iApply (rel_faa_l_inv' _ (⊤ ∖ ↑N)).
     iMod (inv_acc with "Hinv") as "[HP Hclose]"; auto.
     iModIntro.
-    iDestruct ("Hewp" with "HP Hclose") as "[%n1 [Hl Hewp]]".
+    iDestruct ("Hrel" with "HP Hclose") as "[%n1 [Hl Hrel]]".
     iExists n1. by iFrame.
   Qed.
 
-  Lemma ewp_faa_r X R e1 k2 l2 (n2 m2 : Z) :
+  Lemma rel_faa_r X R e1 k2 l2 (n2 m2 : Z) :
     l2 ↦ₛ #n2 -∗
-    (l2 ↦ₛ #(n2 + m2) -∗ EWP e1 ≤ fill k2 #n2 <|X|> {{R}}) -∗
-    EWP e1 ≤ fill k2 (FAA #l2 #m2) <|X|> {{R}}.
+    (l2 ↦ₛ #(n2 + m2) -∗ REL e1 ≤ fill k2 #n2 <|X|> {{R}}) -∗
+    REL e1 ≤ fill k2 (FAA #l2 #m2) <|X|> {{R}}.
   Proof.
-    rewrite !ewp_unfold /ewp_pre obs_refines_eq /obs_refines_def.
-    iIntros "Hl2 Hewp %k1' %k2' %S Hkwp %j %k2'' #Hspec Hj".
+    rewrite !rel_unfold /rel_pre obs_refines_eq /obs_refines_def.
+    iIntros "Hl2 Hrel %k1' %k2' %S Hkwp %j %k2'' #Hspec Hj".
     rewrite -!fill_app.
     iApply fupd_wp.
     iMod (step_faa with "Hspec Hj Hl2") as "[Hj Hl2]"; first done.
     rewrite !fill_app.
-    iApply ("Hewp" with "Hl2 Hkwp Hspec Hj").
+    iApply ("Hrel" with "Hl2 Hkwp Hspec Hj").
   Qed.
 
-  Lemma ewp_cmpxchg_fail_l X R k1 (l1 : loc) (u1 v1 w1 : val) e2 :
+  Lemma rel_cmpxchg_fail_l X R k1 (l1 : loc) (u1 v1 w1 : val) e2 :
     w1 ≠ u1 →
     vals_compare_safe w1 u1 →
     ▷ l1 ↦ w1 -∗
-    ▷ (l1 ↦ w1 -∗ EWP fill k1 (w1, #false)%V ≤ e2 <|X|> {{R}}) -∗
-    EWP fill k1 (CmpXchg #l1 u1 v1) ≤ e2 <|X|> {{R}}.
+    ▷ (l1 ↦ w1 -∗ REL fill k1 (w1, #false)%V ≤ e2 <|X|> {{R}}) -∗
+    REL fill k1 (CmpXchg #l1 u1 v1) ≤ e2 <|X|> {{R}}.
   Proof.
-    rewrite !ewp_unfold /ewp_pre obs_refines_eq /obs_refines_def.
-    iIntros "%Hneq %Hsafe Hl1 Hewp %k1' %k2' %S Hkwp %j %k2'' #Hspec Hj".
+    rewrite !rel_unfold /rel_pre obs_refines_eq /obs_refines_def.
+    iIntros "%Hneq %Hsafe Hl1 Hrel %k1' %k2' %S Hkwp %j %k2'' #Hspec Hj".
     iEval (rewrite -fill_app).
     iApply (wp_cmpxchg_fail with "Hl1"); try done.
     iIntros "!> !> Hl1".
     rewrite fill_app.
-    iApply fupd_wp. iApply ("Hewp" with "Hl1 Hkwp Hspec Hj").
+    iApply fupd_wp. iApply ("Hrel" with "Hl1 Hkwp Hspec Hj").
   Qed.
 
-  Lemma ewp_cmpxchg_fail_r_with_mask E X R e1 k2 l2 (u2 v2 w2 : val) :
+  Lemma rel_cmpxchg_fail_r_with_mask E X R e1 k2 l2 (u2 v2 w2 : val) :
     ↑specN ⊆ E →
     w2 ≠ u2 →
     vals_compare_safe w2 u2 →
     l2 ↦ₛ w2 -∗
-    (l2 ↦ₛ w2 -∗ EWP e1 ≤ fill k2 (w2, #false)%V @E <|X|> {{R}}) -∗
-    EWP e1 ≤ fill k2 (CmpXchg #l2 u2 v2) @E <|X|> {{R}}.
+    (l2 ↦ₛ w2 -∗ REL e1 ≤ fill k2 (w2, #false)%V @E <|X|> {{R}}) -∗
+    REL e1 ≤ fill k2 (CmpXchg #l2 u2 v2) @E <|X|> {{R}}.
   Proof.
-    rewrite !ewp_unfold /ewp_pre obs_refines_eq /obs_refines_def.
-    iIntros "%HE %Hneq %Hsafe Hl2 Hewp %k1' %k2' %S Hkwp %j %k2'' #Hspec Hj".
+    rewrite !rel_unfold /rel_pre obs_refines_eq /obs_refines_def.
+    iIntros "%HE %Hneq %Hsafe Hl2 Hrel %k1' %k2' %S Hkwp %j %k2'' #Hspec Hj".
     rewrite -!fill_app.
     iMod (step_cmpxchg_fail with "Hspec Hj Hl2") as "[Hj Hl2]"; try done.
     rewrite !fill_app.
-    iApply ("Hewp" with "Hl2 Hkwp Hspec Hj").
+    iApply ("Hrel" with "Hl2 Hkwp Hspec Hj").
   Qed.
 
-  Lemma ewp_cmpxchg_fail_r X R e1 k2 l2 (u2 v2 w2 : val) :
+  Lemma rel_cmpxchg_fail_r X R e1 k2 l2 (u2 v2 w2 : val) :
     w2 ≠ u2 →
     vals_compare_safe w2 u2 →
     l2 ↦ₛ w2 -∗
-    (l2 ↦ₛ w2 -∗ EWP e1 ≤ fill k2 (w2, #false)%V <|X|> {{R}}) -∗
-    EWP e1 ≤ fill k2 (CmpXchg #l2 u2 v2) <|X|> {{R}}.
-  Proof. by apply ewp_cmpxchg_fail_r_with_mask. Qed.
+    (l2 ↦ₛ w2 -∗ REL e1 ≤ fill k2 (w2, #false)%V <|X|> {{R}}) -∗
+    REL e1 ≤ fill k2 (CmpXchg #l2 u2 v2) <|X|> {{R}}.
+  Proof. by apply rel_cmpxchg_fail_r_with_mask. Qed.
 
-  Lemma ewp_cmpxchg_suc_l X R k1 l1 (u1 v1 : val) e2 :
+  Lemma rel_cmpxchg_suc_l X R k1 l1 (u1 v1 : val) e2 :
     val_is_unboxed u1 →
     ▷ l1 ↦ u1 -∗
-    ▷ (l1 ↦ v1 -∗ EWP fill k1 (u1, #true)%V ≤ e2 <|X|> {{R}}) -∗
-    EWP fill k1 (CmpXchg #l1 u1 v1) ≤ e2 <|X|> {{R}}.
+    ▷ (l1 ↦ v1 -∗ REL fill k1 (u1, #true)%V ≤ e2 <|X|> {{R}}) -∗
+    REL fill k1 (CmpXchg #l1 u1 v1) ≤ e2 <|X|> {{R}}.
   Proof.
-    rewrite !ewp_unfold /ewp_pre obs_refines_eq /obs_refines_def.
-    iIntros "%Hsafe Hl1 Hewp %k1' %k2' %S Hkwp %j %k2'' #Hspec Hj".
+    rewrite !rel_unfold /rel_pre obs_refines_eq /obs_refines_def.
+    iIntros "%Hsafe Hl1 Hrel %k1' %k2' %S Hkwp %j %k2'' #Hspec Hj".
     iEval (rewrite -fill_app).
     iApply (wp_cmpxchg_suc with "Hl1"); try done. { by left. }
     iIntros "!> !> Hl1".
     rewrite !fill_app.
-    iApply fupd_wp. iApply ("Hewp" with "Hl1 Hkwp Hspec Hj").
+    iApply fupd_wp. iApply ("Hrel" with "Hl1 Hkwp Hspec Hj").
   Qed.
 
-  Lemma ewp_cmpxchg_suc_r_with_mask E X R e1 k2 l2 (u2 v2 : val) :
+  Lemma rel_cmpxchg_suc_r_with_mask E X R e1 k2 l2 (u2 v2 : val) :
     ↑specN ⊆ E →
     val_is_unboxed u2 →
     l2 ↦ₛ u2 -∗
-    (l2 ↦ₛ v2 -∗ EWP e1 ≤ fill k2 (u2, #true)%V @E <|X|> {{R}}) -∗
-    EWP e1 ≤ fill k2 (CmpXchg #l2 u2 v2) @E <|X|> {{R}}.
+    (l2 ↦ₛ v2 -∗ REL e1 ≤ fill k2 (u2, #true)%V @E <|X|> {{R}}) -∗
+    REL e1 ≤ fill k2 (CmpXchg #l2 u2 v2) @E <|X|> {{R}}.
   Proof.
-    rewrite !ewp_unfold /ewp_pre obs_refines_eq /obs_refines_def.
-    iIntros "%HE %Hsafe Hl2 Hewp %k1' %k2' %S Hkwp %j %k2'' #Hspec Hj".
+    rewrite !rel_unfold /rel_pre obs_refines_eq /obs_refines_def.
+    iIntros "%HE %Hsafe Hl2 Hrel %k1' %k2' %S Hkwp %j %k2'' #Hspec Hj".
     rewrite -!fill_app.
     iMod (step_cmpxchg_suc with "Hspec Hj Hl2") as "[Hj Hl2]"; try done.
     { by left. }
     rewrite !fill_app.
-    iApply ("Hewp" with "Hl2 Hkwp Hspec Hj").
+    iApply ("Hrel" with "Hl2 Hkwp Hspec Hj").
   Qed.
 
-  Lemma ewp_cmpxchg_suc_r X R e1 k2 l2 (u2 v2 : val) :
+  Lemma rel_cmpxchg_suc_r X R e1 k2 l2 (u2 v2 : val) :
     val_is_unboxed u2 →
     l2 ↦ₛ u2 -∗
-    (l2 ↦ₛ v2 -∗ EWP e1 ≤ fill k2 (u2, #true)%V <|X|> {{R}}) -∗
-    EWP e1 ≤ fill k2 (CmpXchg #l2 u2 v2) <|X|> {{R}}.
-  Proof. by apply ewp_cmpxchg_suc_r_with_mask. Qed.
+    (l2 ↦ₛ v2 -∗ REL e1 ≤ fill k2 (u2, #true)%V <|X|> {{R}}) -∗
+    REL e1 ≤ fill k2 (CmpXchg #l2 u2 v2) <|X|> {{R}}.
+  Proof. by apply rel_cmpxchg_suc_r_with_mask. Qed.
 
 End baze_rules.
 
@@ -1580,7 +1580,7 @@ End baze_rules.
 (* ------------------------------------------------------------------------- *)
 (* Model. *)
 
-Section bewp.
+Section brel.
   Context `{!blazeGS Σ}.
 
   (* ----------------------------------------------------------------------- *)
@@ -1624,10 +1624,10 @@ Section bewp.
   (* ----------------------------------------------------------------------- *)
   (* Refinement relation in blaze. *)
 
-  Definition bewp :
+  Definition brel :
     expr -d> expr -d> iLblThy Σ -d> (val -d> val -d> iProp Σ) -d> iProp Σ
   := (λ e1 e2 L R,
-    valid L -∗ distinct' L -∗ EWP e1 ≤ e2 <|to_iThy L|> {{R}}
+    valid L -∗ distinct' L -∗ REL e1 ≤ e2 <|to_iThy L|> {{R}}
   )%I.
 
   (* ----------------------------------------------------------------------- *)
@@ -1699,24 +1699,24 @@ Section bewp.
   Global Instance distinct'_proper : Proper ((≡) ==> (≡)) distinct'.
   Proof. apply: ne_proper. Qed.
 
-  (* bewp. *)
-  Global Instance bewp_ne e1 e2 : NonExpansive2 (bewp e1 e2).
-  Proof. by intros n ?? H ?? H'; rewrite /bewp H H'. Qed.
-  Global Instance bewp_proper e1 e2 : Proper ((≡) ==> (≡) ==> (≡)) (bewp e1 e2).
+  (* brel. *)
+  Global Instance brel_ne e1 e2 : NonExpansive2 (brel e1 e2).
+  Proof. by intros n ?? H ?? H'; rewrite /brel H H'. Qed.
+  Global Instance brel_proper e1 e2 : Proper ((≡) ==> (≡) ==> (≡)) (brel e1 e2).
   Proof. apply: ne_proper_2. Qed.
-End bewp.
+End brel.
 
 
 (* ------------------------------------------------------------------------- *)
 (* Notation. *)
 
-Notation "'BEWP' e1 ≤ e2 <| L | > {{ R } }" :=
-  (bewp e1%E e2%E L%I R%I)
+Notation "'BREL' e1 ≤ e2 <| L | > {{ R } }" :=
+  (brel e1%E e2%E L%I R%I)
   (at level 20, e1, e2, L, R at next level, only parsing) : bi_scope.
-Notation "'BEWP' e1 ≤ e2  <| L | > {{ v1 ; v2 , Q } }" :=
-  (bewp e1%E e2%E L%I (λ v1 v2, Q)%I)
+Notation "'BREL' e1 ≤ e2  <| L | > {{ v1 ; v2 , Q } }" :=
+  (brel e1%E e2%E L%I (λ v1 v2, Q)%I)
   (at level 20, e1, e2, L, Q at next level,
-  format "'[hv' 'BEWP'  e1  ≤  e2  '/' <| L | >  '/' {{  '[' v1  ;  v2 ,  '/' Q  ']' } } ']'") : bi_scope.
+  format "'[hv' 'BREL'  e1  ≤  e2  '/' <| L | >  '/' {{  '[' v1  ;  v2 ,  '/' Q  ']' } } ']'") : bi_scope.
 
 
 (* ------------------------------------------------------------------------- *)
@@ -2362,20 +2362,20 @@ End basic_properties.
 Section blaze_rules.
   Context `{!blazeGS Σ}.
 
-  Lemma bewp_learn e1 e2 L R :
-    (distinct' L -∗ valid L -∗ BEWP e1 ≤ e2 <|L|> {{R}}) ⊢ BEWP e1 ≤ e2 <|L|> {{R}}.
-  Proof. iIntros "Hbewp #? %". by iApply "Hbewp". Qed.
+  Lemma brel_learn e1 e2 L R :
+    (distinct' L -∗ valid L -∗ BREL e1 ≤ e2 <|L|> {{R}}) ⊢ BREL e1 ≤ e2 <|L|> {{R}}.
+  Proof. iIntros "Hbrel #? %". by iApply "Hbrel". Qed.
 
-  Lemma bewp_change e1 e2 L R :
+  Lemma brel_change e1 e2 L R :
     distinct' L -∗
     valid L -∗
-    BEWP e1 ≤ e2 <|to_iThy_bot L|> {{R}} -∗
-    BEWP e1 ≤ e2 <|[]|> {{R}}.
+    BREL e1 ≤ e2 <|to_iThy_bot L|> {{R}} -∗
+    BREL e1 ≤ e2 <|[]|> {{R}}.
   Proof.
-    iIntros "[% %] [#Hvalid_l #Hvalid_r] Hbewp _ _".
-    iApply (ewp_introduction_mono with "[Hbewp]"); last (
+    iIntros "[% %] [#Hvalid_l #Hvalid_r] Hbrel _ _".
+    iApply (rel_introduction_mono with "[Hbrel]"); last (
     iApply (iThy_le_to_iThy_bot L)).
-    iApply "Hbewp".
+    iApply "Hbrel".
     { iSplit.
       - by iApply (valid_l_to_iThy_bot L).
       - by iApply (valid_r_to_iThy_bot L).
@@ -2386,90 +2386,90 @@ Section blaze_rules.
     }
   Qed.
 
-  Lemma bewp_value (v1 v2 : val) L R : R v1 v2 ⊢ BEWP v1 ≤ v2 <|L|> {{R}}.
-  Proof. iIntros "HR _ _". by iApply ewp_value. Qed.
+  Lemma brel_value (v1 v2 : val) L R : R v1 v2 ⊢ BREL v1 ≤ v2 <|L|> {{R}}.
+  Proof. iIntros "HR _ _". by iApply rel_value. Qed.
 
-  Lemma bewp_wand e1 e2 L R S :
-    BEWP e1 ≤ e2 <|L|> {{R}} -∗ □ (∀ v1 v2, R v1 v2 -∗ S v1 v2) -∗
-    BEWP e1 ≤ e2 <|L|> {{S}}.
+  Lemma brel_wand e1 e2 L R S :
+    BREL e1 ≤ e2 <|L|> {{R}} -∗ □ (∀ v1 v2, R v1 v2 -∗ S v1 v2) -∗
+    BREL e1 ≤ e2 <|L|> {{S}}.
   Proof.
-    iIntros "Hbewp #HR #Hvalid #Hdistinct".
-    iApply (ewp_wand with "[Hbewp] HR").
-    by iApply "Hbewp".
+    iIntros "Hbrel #HR #Hvalid #Hdistinct".
+    iApply (rel_wand with "[Hbrel] HR").
+    by iApply "Hbrel".
   Qed.
 
-  Lemma bewp_wand' e1 e2 L R S :
+  Lemma brel_wand' e1 e2 L R S :
     □ (∀ v1 v2, R v1 v2 -∗ S v1 v2) -∗
-    BEWP e1 ≤ e2 <|L|> {{R}} -∗
-    BEWP e1 ≤ e2 <|L|> {{S}}.
-  Proof. by iIntros "#HR Hbewp"; iApply (bewp_wand with "Hbewp HR"). Qed.
+    BREL e1 ≤ e2 <|L|> {{R}} -∗
+    BREL e1 ≤ e2 <|L|> {{S}}.
+  Proof. by iIntros "#HR Hbrel"; iApply (brel_wand with "Hbrel HR"). Qed.
 
-  Lemma bewp_mono (m : mode) e1 e2 L M R S :
+  Lemma brel_mono (m : mode) e1 e2 L M R S :
     to_iThy_le L M -∗
-    BEWP e1 ≤ e2 <|L|> {{R}} -∗
+    BREL e1 ≤ e2 <|L|> {{R}} -∗
     □?m (∀ v1 v2, R v1 v2 -∗ S v1 v2) -∗
-    BEWP e1 ≤ e2 <|to_iThyIfMono m M|> {{S}}.
+    BREL e1 ≤ e2 <|to_iThyIfMono m M|> {{S}}.
   Proof.
-    iIntros "(#Hle & #Hvalid_le & #Hdistinct_le) Hbewp HS #Hvalid %Hdistinct".
-    iApply (ewp_introduction_mono with "[Hbewp HS]"); last iApply iThy_le_to_iThy_to_iThyIfMono.
-    iApply (ewp_mono with "[Hbewp]"); last by iApply "HS".
-    iSpecialize ("Hbewp" with "[] []").
+    iIntros "(#Hle & #Hvalid_le & #Hdistinct_le) Hbrel HS #Hvalid %Hdistinct".
+    iApply (rel_introduction_mono with "[Hbrel HS]"); last iApply iThy_le_to_iThy_to_iThyIfMono.
+    iApply (rel_mono with "[Hbrel]"); last by iApply "HS".
+    iSpecialize ("Hbrel" with "[] []").
     { iApply "Hvalid_le". by iApply valid_to_iThyIfMono. }
     { iApply "Hdistinct_le"; iPureIntro.
       by rewrite -distinct_to_iThyIfMono in Hdistinct.
     }
-    by iApply (ewp_introduction_mono with "Hbewp"); last iApply "Hle".
+    by iApply (rel_introduction_mono with "Hbrel"); last iApply "Hle".
   Qed.
 
-  Lemma bewp_introduction l1s l2s X Q e1 e2 L R :
+  Lemma brel_introduction l1s l2s X Q e1 e2 L R :
     ((l1s, l2s), X) ∈ L →
     iThyTraverse l1s l2s X e1 e2 Q -∗
-    □ ▷ (∀ s1 s2, Q s1 s2 -∗ BEWP s1 ≤ s2 <|L|> {{R}}) -∗
-    BEWP e1 ≤ e2 <|L|> {{R}}.
+    □ ▷ (∀ s1 s2, Q s1 s2 -∗ BREL s1 ≤ s2 <|L|> {{R}}) -∗
+    BREL e1 ≤ e2 <|L|> {{R}}.
   Proof.
-    iIntros "%Hin HX #Hbewp #Hvalid %Hdistinct".
-    iApply (ewp_introduction with "[HX]").
+    iIntros "%Hin HX #Hbrel #Hvalid %Hdistinct".
+    iApply (rel_introduction with "[HX]").
     { iExists l1s, l2s, X. by iFrame. }
     iIntros "!> !> %s1 %s2 HQ".
-    by iApply ("Hbewp" with "HQ").
+    by iApply ("Hbrel" with "HQ").
   Qed.
 
-  Lemma bewp_introduction' l1s l2s X e1 e2 L R :
+  Lemma brel_introduction' l1s l2s X e1 e2 L R :
     ((l1s, l2s), X) ∈ L →
-    iThyTraverse l1s l2s X e1 e2 (λ s1 s2, BEWP s1 ≤ s2 <|L|> {{R}}) -∗
-    BEWP e1 ≤ e2 <|L|> {{R}}.
+    iThyTraverse l1s l2s X e1 e2 (λ s1 s2, BREL s1 ≤ s2 <|L|> {{R}}) -∗
+    BREL e1 ≤ e2 <|L|> {{R}}.
   Proof.
-    set Q : _ → _ → iProp Σ := (λ s1 s2, BEWP s1 ≤ s2 <|L|> {{R}})%I.
+    set Q : _ → _ → iProp Σ := (λ s1 s2, BREL s1 ≤ s2 <|L|> {{R}})%I.
     iIntros (Hin) "HX".
-    by iApply (bewp_introduction _ _ _ Q with "HX"); last auto.
+    by iApply (brel_introduction _ _ _ Q with "HX"); last auto.
   Qed.
 
-  Lemma fupd_bewp e1 e2 L R :
-    (|={⊤}=> BEWP e1 ≤ e2 <|L|> {{R}}) ⊢ BEWP e1 ≤ e2 <|L|> {{R}}.
+  Lemma fupd_brel e1 e2 L R :
+    (|={⊤}=> BREL e1 ≤ e2 <|L|> {{R}}) ⊢ BREL e1 ≤ e2 <|L|> {{R}}.
   Proof.
-    iIntros "H #Hvalid %Hdistinct". iApply fupd_ewp.
+    iIntros "H #Hvalid %Hdistinct". iApply fupd_rel.
     iMod "H". iApply ("H" with "Hvalid [//]").
   Qed.
 
-  Lemma bewp_pure_step_later `{!blazeGS Σ} e1 e1' e2 φ n L R :
+  Lemma brel_pure_step_later `{!blazeGS Σ} e1 e1' e2 φ n L R :
     PureExec φ n e1 e1' →
     φ →
-    ▷^n (£ n -∗ BEWP e1' ≤ e2 <|L|> {{R}}) ⊢ BEWP e1 ≤ e2 <|L|> {{R}}.
+    ▷^n (£ n -∗ BREL e1' ≤ e2 <|L|> {{R}}) ⊢ BREL e1 ≤ e2 <|L|> {{R}}.
   Proof.
     intros Hexec ?.
-    iIntros "Hbewp #Hvalid #Hdistinct".
-    iApply ewp_pure_step_l; first done.
-    iIntros "!> H". by iApply ("Hbewp" with "H").
+    iIntros "Hbrel #Hvalid #Hdistinct".
+    iApply rel_pure_step_l; first done.
+    iIntros "!> H". by iApply ("Hbrel" with "H").
   Qed.
 
-  Lemma bewp_pure_step_r `{!blazeGS Σ} e1 e2 e2' φ n L R :
+  Lemma brel_pure_step_r `{!blazeGS Σ} e1 e2 e2' φ n L R :
     PureExec φ n e2 e2' →
     φ →
-    BEWP e1 ≤ e2' <|L|> {{R}} ⊢ BEWP e1 ≤ e2 <|L|> {{R}}.
+    BREL e1 ≤ e2' <|L|> {{R}} ⊢ BREL e1 ≤ e2 <|L|> {{R}}.
   Proof.
-    iIntros (Hexec Hφ) "Hbewp #Hvalid %Hdistinct".
-    iApply (ewp_pure_step_r _ _ e2' _ φ n). { done. }
-    by iApply "Hbewp".
+    iIntros (Hexec Hφ) "Hbrel #Hvalid %Hdistinct".
+    iApply (rel_pure_step_r _ _ e2' _ φ n). { done. }
+    by iApply "Hbrel".
   Qed.
 
 End blaze_rules.
@@ -2481,294 +2481,294 @@ End blaze_rules.
 Section blaze_rules_state_and_concurrency_rules.
   Context `{!blazeGS Σ}.
 
-  Lemma bewp_fork_l L R k1 e1 e2' i e2 :
+  Lemma brel_fork_l L R k1 e1 e2' i e2 :
     ▷ i ⤇ e2 -∗
-    ▷ BEWP e1 ≤ e2 <|to_iThy_bot L|> {{ _; _, True }} -∗
-    ▷ BEWP fill k1 #() ≤ e2' <|L|> {{R}} -∗
-    BEWP fill k1 (Fork e1) ≤ e2' <|L|> {{R}}.
+    ▷ BREL e1 ≤ e2 <|to_iThy_bot L|> {{ _; _, True }} -∗
+    ▷ BREL fill k1 #() ≤ e2' <|L|> {{R}} -∗
+    BREL fill k1 (Fork e1) ≤ e2' <|L|> {{R}}.
   Proof.
-    iIntros "Hi Hbewp_e12 Hbewp_k12 #Hvalid %Hdistinct".
-    iApply (ewp_fork_l with "Hi [Hbewp_e12]"); iNext.
-    - iPoseProof (bewp_change with "[//] Hvalid Hbewp_e12") as "Hbewp_e12".
-      iSpecialize ("Hbewp_e12" with "[] []").
+    iIntros "Hi Hbrel_e12 Hbrel_k12 #Hvalid %Hdistinct".
+    iApply (rel_fork_l with "Hi [Hbrel_e12]"); iNext.
+    - iPoseProof (brel_change with "[//] Hvalid Hbrel_e12") as "Hbrel_e12".
+      iSpecialize ("Hbrel_e12" with "[] []").
       { iApply valid_nil. } { iPureIntro. apply distinct_nil. }
-      iApply (ewp_introduction_mono with "Hbewp_e12").
+      iApply (rel_introduction_mono with "Hbrel_e12").
       iApply iThy_le_to_iThy_nil.
-    - by iApply "Hbewp_k12".
+    - by iApply "Hbrel_k12".
   Qed.
 
-  Lemma bewp_logical_fork k1 k2 L R S e1 e2' i e2 :
+  Lemma brel_logical_fork k1 k2 L R S e1 e2' i e2 :
     i ⤇ fill k2 e2 -∗
-    BEWP e1 ≤ e2 <|to_iThy_bot L|> {{R}} -∗
-    (∀ (v1 v2 : val), R v1 v2 -∗ i ⤇ fill k2 v2 -∗ BEWP fill k1 v1 ≤ e2' <|L|> {{S}}) -∗
-    BEWP fill k1 e1 ≤ e2' <|L|> {{S}}.
+    BREL e1 ≤ e2 <|to_iThy_bot L|> {{R}} -∗
+    (∀ (v1 v2 : val), R v1 v2 -∗ i ⤇ fill k2 v2 -∗ BREL fill k1 v1 ≤ e2' <|L|> {{S}}) -∗
+    BREL fill k1 e1 ≤ e2' <|L|> {{S}}.
   Proof.
-    iIntros "Hi Hbewp_e12 Hbewp_k12 #Hvalid %Hdistinct".
-    iApply (ewp_logical_fork with "Hi [Hbewp_e12]").
-    - iPoseProof (bewp_change with "[//] Hvalid Hbewp_e12") as "Hbewp_e12".
-      iSpecialize ("Hbewp_e12" with "[] []").
+    iIntros "Hi Hbrel_e12 Hbrel_k12 #Hvalid %Hdistinct".
+    iApply (rel_logical_fork with "Hi [Hbrel_e12]").
+    - iPoseProof (brel_change with "[//] Hvalid Hbrel_e12") as "Hbrel_e12".
+      iSpecialize ("Hbrel_e12" with "[] []").
       { iApply valid_nil. } { iPureIntro. apply distinct_nil. }
-      iApply (ewp_introduction_mono with "Hbewp_e12").
+      iApply (rel_introduction_mono with "Hbrel_e12").
       iApply iThy_le_to_iThy_nil.
     - iIntros (v1 v2) "HR Hi".
-      by iApply ("Hbewp_k12" with "HR Hi").
+      by iApply ("Hbrel_k12" with "HR Hi").
   Qed.
 
-  Lemma bewp_logical_fork' k1 k2 L R e1 e2' i e2 :
+  Lemma brel_logical_fork' k1 k2 L R e1 e2' i e2 :
     i ⤇ fill k2 e2 -∗
-    BEWP e1 ≤ e2 <|to_iThy_bot L|> {{ v1; v2,
-      i ⤇ fill k2 v2 -∗ BEWP fill k1 v1 ≤ e2' <|L|> {{R}}
+    BREL e1 ≤ e2 <|to_iThy_bot L|> {{ v1; v2,
+      i ⤇ fill k2 v2 -∗ BREL fill k1 v1 ≤ e2' <|L|> {{R}}
     }} -∗
-    BEWP fill k1 e1 ≤ e2' <|L|> {{R}}.
+    BREL fill k1 e1 ≤ e2' <|L|> {{R}}.
   Proof.
-    iIntros "Hi Hbewp". iApply (bewp_logical_fork with "Hi Hbewp").
-    by iIntros (??) "Hbewp Hi"; iApply "Hbewp".
+    iIntros "Hi Hbrel". iApply (brel_logical_fork with "Hi Hbrel").
+    by iIntros (??) "Hbrel Hi"; iApply "Hbrel".
   Qed.
 
-  Lemma bewp_fork_r L R e1 k2 e2 :
-    (∀ i, i ⤇ e2 -∗ BEWP e1 ≤ fill k2 #() <|L|> {{R}}) -∗
-    BEWP e1 ≤ fill k2 (Fork e2) <|L|> {{R}}.
+  Lemma brel_fork_r L R e1 k2 e2 :
+    (∀ i, i ⤇ e2 -∗ BREL e1 ≤ fill k2 #() <|L|> {{R}}) -∗
+    BREL e1 ≤ fill k2 (Fork e2) <|L|> {{R}}.
   Proof.
-    iIntros "Hbewp #Hvalid %Hdistinct".
-    iApply ewp_fork_r. iIntros (i) "Hi".
-    by iApply ("Hbewp" with "Hi").
+    iIntros "Hbrel #Hvalid %Hdistinct".
+    iApply rel_fork_r. iIntros (i) "Hi".
+    by iApply ("Hbrel" with "Hi").
   Qed.
 
-  Lemma bewp_thread_swap e1 e2 i k3 e3 L R :
+  Lemma brel_thread_swap e1 e2 i k3 e3 L R :
     i ⤇ fill k3 e3 -∗
     (∀ j k, j ⤇ fill k e2 -∗
-       BEWP e1 ≤ e3 <|to_iThy_bot L|> {{ v1; _, ∃ (v2 : val), j ⤇ fill k v2 ∗ R v1 v2 }}
+       BREL e1 ≤ e3 <|to_iThy_bot L|> {{ v1; _, ∃ (v2 : val), j ⤇ fill k v2 ∗ R v1 v2 }}
     ) -∗
-    BEWP e1 ≤ e2 <|L|> {{R}}.
+    BREL e1 ≤ e2 <|L|> {{R}}.
   Proof.
     iIntros "Hi He13 #? %".
-    iApply (ewp_thread_swap with "Hi").
+    iApply (rel_thread_swap with "Hi").
     iIntros (j k) "Hj".
-    iApply (ewp_introduction_mono with "[He13 Hj]");
+    iApply (rel_introduction_mono with "[He13 Hj]");
     last iApply (iThy_le_to_iThy_bot _ iThyBot).
     iApply ("He13" with "Hj").
     - by iApply (valid_to_iThy_bot L).
     - iPureIntro. by rewrite -distinct_to_iThy_bot.
   Qed.
 
-  Lemma bewp_handle_os_l k k' hs (l : label) (v : val) (h ret : expr) e2 L R :
+  Lemma brel_handle_os_l k k' hs (l : label) (v : val) (h ret : expr) e2 L R :
     let c := match hs with Deep => HandleCtx hs OS l h ret :: k' | Shallow => k' end in
     l ∉ ectx_labels k' →
-    (▷ ∀ r, unshot r -∗ BEWP fill k (App (App h v) (ContV r c)) ≤ e2 <|L|> {{R}}) -∗
-    BEWP fill k (Handle hs OS (EffLabel l) (fill k' (Do (EffLabel l) v)) h ret) ≤ e2 <|L|> {{R}}.
+    (▷ ∀ r, unshot r -∗ BREL fill k (App (App h v) (ContV r c)) ≤ e2 <|L|> {{R}}) -∗
+    BREL fill k (Handle hs OS (EffLabel l) (fill k' (Do (EffLabel l) v)) h ret) ≤ e2 <|L|> {{R}}.
   Proof.
-    iIntros (? Hnot_in_k') "Hbewp #Hvalid %Hdistinct".
-    iApply (ewp_handle_os_l with "[Hbewp]"); first done.
-    iIntros "!> %r Hr". by iApply ("Hbewp" with "Hr").
+    iIntros (? Hnot_in_k') "Hbrel #Hvalid %Hdistinct".
+    iApply (rel_handle_os_l with "[Hbrel]"); first done.
+    iIntros "!> %r Hr". by iApply ("Hbrel" with "Hr").
   Qed.
 
-  Lemma bewp_handle_os_r k k' hs (l : label) (v : val) (h ret : expr) e1 L R :
+  Lemma brel_handle_os_r k k' hs (l : label) (v : val) (h ret : expr) e1 L R :
     let c := match hs with Deep => HandleCtx hs OS l h ret :: k' | Shallow => k' end in
     l ∉ ectx_labels k' →
-    (∀ r, unshotₛ r -∗ BEWP e1 ≤ fill k (App (App h v) (ContV r c)) <|L|> {{R}}) -∗
-    BEWP e1 ≤ fill k (Handle hs OS (EffLabel l) (fill k' (Do (EffLabel l) v)) h ret) <|L|> {{R}}.
+    (∀ r, unshotₛ r -∗ BREL e1 ≤ fill k (App (App h v) (ContV r c)) <|L|> {{R}}) -∗
+    BREL e1 ≤ fill k (Handle hs OS (EffLabel l) (fill k' (Do (EffLabel l) v)) h ret) <|L|> {{R}}.
   Proof.
-    iIntros (? Hnot_in_k') "Hbewp #Hvalid %Hdistinct".
-    iApply (ewp_handle_os_r with "[Hbewp]"); first done.
-    iIntros "%r Hr". by iApply ("Hbewp" with "Hr").
+    iIntros (? Hnot_in_k') "Hbrel #Hvalid %Hdistinct".
+    iApply (rel_handle_os_r with "[Hbrel]"); first done.
+    iIntros "%r Hr". by iApply ("Hbrel" with "Hr").
   Qed.
 
-  Lemma bewp_cont_l k k' (v : val) r e2 L R :
+  Lemma brel_cont_l k k' (v : val) r e2 L R :
     ▷ unshot r -∗
-    ▷ BEWP fill k (fill k' v) ≤ e2 <|L|> {{R}} -∗
-    BEWP fill k (App (ContV r k') v) ≤ e2 <|L|> {{R}}.
+    ▷ BREL fill k (fill k' v) ≤ e2 <|L|> {{R}} -∗
+    BREL fill k (App (ContV r k') v) ≤ e2 <|L|> {{R}}.
   Proof.
-    iIntros "Hr Hbewp #Hvalid %Hdistinct".
-    iApply (ewp_cont_l with "Hr [Hbewp]").
-    by iApply "Hbewp".
+    iIntros "Hr Hbrel #Hvalid %Hdistinct".
+    iApply (rel_cont_l with "Hr [Hbrel]").
+    by iApply "Hbrel".
   Qed.
 
-  Lemma bewp_cont_r k k' (v : val) r e1 L R :
+  Lemma brel_cont_r k k' (v : val) r e1 L R :
     unshotₛ r -∗ 
-    BEWP e1 ≤ fill k (fill k' v) <|L|> {{R}} -∗
-    BEWP e1 ≤ fill k (App (ContV r k') v) <|L|> {{R}}.
+    BREL e1 ≤ fill k (fill k' v) <|L|> {{R}} -∗
+    BREL e1 ≤ fill k (App (ContV r k') v) <|L|> {{R}}.
   Proof.
-    iIntros "Hr Hbewp #Hvalid %Hdistinct".
-    iApply (ewp_cont_r with "Hr [Hbewp]").
-    by iApply "Hbewp".
+    iIntros "Hr Hbrel #Hvalid %Hdistinct".
+    iApply (rel_cont_r with "Hr [Hbrel]").
+    by iApply "Hbrel".
   Qed.
 
-  Lemma bewp_alloc_l L R k1 v1 e2 :
-    ▷ (∀ l1, l1 ↦ v1 -∗ meta_token l1 ⊤ -∗ BEWP fill k1 #l1 ≤ e2 <|L|> {{R}}) -∗
-    BEWP fill k1 (ref v1) ≤ e2 <|L|> {{R}}.
+  Lemma brel_alloc_l L R k1 v1 e2 :
+    ▷ (∀ l1, l1 ↦ v1 -∗ meta_token l1 ⊤ -∗ BREL fill k1 #l1 ≤ e2 <|L|> {{R}}) -∗
+    BREL fill k1 (ref v1) ≤ e2 <|L|> {{R}}.
   Proof.
-    iIntros "Hbewp #Hvalid %Hdistinct".
-    iApply ewp_alloc_l.
+    iIntros "Hbrel #Hvalid %Hdistinct".
+    iApply rel_alloc_l.
     iIntros "!> %l1 Hl1 Hmeta".
-    iApply ("Hbewp" with "Hl1 Hmeta [//] [//]").
+    iApply ("Hbrel" with "Hl1 Hmeta [//] [//]").
   Qed.
 
-  Lemma bewp_alloc_r L R e1 k2 v2 :
-    (∀ l2, l2 ↦ₛ v2 -∗ BEWP e1 ≤ fill k2 #l2 <|L|> {{R}}) -∗
-    BEWP e1 ≤ fill k2 (ref v2) <|L|> {{R}}.
+  Lemma brel_alloc_r L R e1 k2 v2 :
+    (∀ l2, l2 ↦ₛ v2 -∗ BREL e1 ≤ fill k2 #l2 <|L|> {{R}}) -∗
+    BREL e1 ≤ fill k2 (ref v2) <|L|> {{R}}.
   Proof.
-    iIntros "Hbewp #Hvalid %Hdistinct".
-    iApply ewp_alloc_r.
+    iIntros "Hbrel #Hvalid %Hdistinct".
+    iApply rel_alloc_r.
     iIntros "%l2 Hl2".
-    iApply ("Hbewp" with "Hl2 [//] [//]").
+    iApply ("Hbrel" with "Hl2 [//] [//]").
   Qed.
 
-  Lemma bewp_load_l L R k1 l1 dq1 v1 e2 :
+  Lemma brel_load_l L R k1 l1 dq1 v1 e2 :
     ▷ l1 ↦{dq1} v1 -∗
-    ▷ (l1 ↦{dq1} v1 -∗ BEWP fill k1 v1 ≤ e2 <|L|> {{R}}) -∗
-    BEWP fill k1 (! #l1) ≤ e2 <|L|> {{R}}.
+    ▷ (l1 ↦{dq1} v1 -∗ BREL fill k1 v1 ≤ e2 <|L|> {{R}}) -∗
+    BREL fill k1 (! #l1) ≤ e2 <|L|> {{R}}.
   Proof.
-    iIntros "Hl1 Hbewp #Hvalid %Hdistinct".
-    iApply (ewp_load_l with "Hl1").
+    iIntros "Hl1 Hbrel #Hvalid %Hdistinct".
+    iApply (rel_load_l with "Hl1").
     iIntros "!> Hl1".
-    iApply ("Hbewp" with "Hl1 [//] [//]").
+    iApply ("Hbrel" with "Hl1 [//] [//]").
   Qed.
 
-  Lemma bewp_load_r L R e1 k2 l2 dq2 v2 :
+  Lemma brel_load_r L R e1 k2 l2 dq2 v2 :
     l2 ↦ₛ{dq2} v2 -∗
-    (l2 ↦ₛ{dq2} v2 -∗ BEWP e1 ≤ fill k2 v2 <|L|> {{R}}) -∗
-    BEWP e1 ≤ fill k2 (! #l2) <|L|> {{R}}.
+    (l2 ↦ₛ{dq2} v2 -∗ BREL e1 ≤ fill k2 v2 <|L|> {{R}}) -∗
+    BREL e1 ≤ fill k2 (! #l2) <|L|> {{R}}.
   Proof.
-    iIntros "Hl2 Hbewp #Hvalid %Hdistinct".
-    iApply (ewp_load_r with "Hl2").
+    iIntros "Hl2 Hbrel #Hvalid %Hdistinct".
+    iApply (rel_load_r with "Hl2").
     iIntros "Hl2".
-    iApply ("Hbewp" with "Hl2 [//] [//]").
+    iApply ("Hbrel" with "Hl2 [//] [//]").
   Qed.
 
-  Lemma bewp_store_l L R k1 l1 v1 w1 e2 :
+  Lemma brel_store_l L R k1 l1 v1 w1 e2 :
     ▷ l1 ↦ v1 -∗
-    ▷ (l1 ↦ w1 -∗ BEWP fill k1 #() ≤ e2 <|L|> {{R}}) -∗
-    BEWP fill k1 (#l1 <- w1) ≤ e2 <|L|> {{R}}.
+    ▷ (l1 ↦ w1 -∗ BREL fill k1 #() ≤ e2 <|L|> {{R}}) -∗
+    BREL fill k1 (#l1 <- w1) ≤ e2 <|L|> {{R}}.
   Proof.
-    iIntros "Hl1 Hbewp #Hvalid %Hdistinct".
-    iApply (ewp_store_l with "Hl1").
+    iIntros "Hl1 Hbrel #Hvalid %Hdistinct".
+    iApply (rel_store_l with "Hl1").
     iIntros "!> Hl1".
-    iApply ("Hbewp" with "Hl1 [//] [//]").
+    iApply ("Hbrel" with "Hl1 [//] [//]").
   Qed.
 
-  Lemma bewp_store_r L R e1 k2 l2 v2 w2 :
+  Lemma brel_store_r L R e1 k2 l2 v2 w2 :
     l2 ↦ₛ v2 -∗
-    (l2 ↦ₛ w2 -∗ BEWP e1 ≤ fill k2 #() <|L|> {{R}}) -∗
-    BEWP e1 ≤ fill k2 (#l2 <- w2) <|L|> {{R}}.
+    (l2 ↦ₛ w2 -∗ BREL e1 ≤ fill k2 #() <|L|> {{R}}) -∗
+    BREL e1 ≤ fill k2 (#l2 <- w2) <|L|> {{R}}.
   Proof.
-    iIntros "Hl2 Hbewp #Hvalid %Hdistinct".
-    iApply (ewp_store_r with "Hl2").
+    iIntros "Hl2 Hbrel #Hvalid %Hdistinct".
+    iApply (rel_store_r with "Hl2").
     iIntros "Hl2".
-    iApply ("Hbewp" with "Hl2 [//] [//]").
+    iApply ("Hbrel" with "Hl2 [//] [//]").
   Qed.
 
-  Lemma bewp_xchg_l L R k1 l1 v1 w1 e2 :
+  Lemma brel_xchg_l L R k1 l1 v1 w1 e2 :
     ▷ l1 ↦ v1 -∗
-    ▷ (l1 ↦ w1 -∗ BEWP fill k1 v1 ≤ e2 <|L|> {{R}}) -∗
-    BEWP fill k1 (Xchg #l1 w1) ≤ e2 <|L|> {{R}}.
+    ▷ (l1 ↦ w1 -∗ BREL fill k1 v1 ≤ e2 <|L|> {{R}}) -∗
+    BREL fill k1 (Xchg #l1 w1) ≤ e2 <|L|> {{R}}.
   Proof.
-    iIntros "Hl1 Hbewp #Hvalid %Hdistinct".
-    iApply (ewp_xchg_l with "Hl1").
+    iIntros "Hl1 Hbrel #Hvalid %Hdistinct".
+    iApply (rel_xchg_l with "Hl1").
     iIntros "!> Hl1".
-    iApply ("Hbewp" with "Hl1 [//] [//]").
+    iApply ("Hbrel" with "Hl1 [//] [//]").
   Qed.
 
-  Lemma bewp_xchg_r L R e1 k2 l2 v2 w2 :
+  Lemma brel_xchg_r L R e1 k2 l2 v2 w2 :
     l2 ↦ₛ v2 -∗
-    (l2 ↦ₛ w2 -∗ BEWP e1 ≤ fill k2 v2 <|L|> {{R}}) -∗
-    BEWP e1 ≤ fill k2 (Xchg #l2 w2) <|L|> {{R}}.
+    (l2 ↦ₛ w2 -∗ BREL e1 ≤ fill k2 v2 <|L|> {{R}}) -∗
+    BREL e1 ≤ fill k2 (Xchg #l2 w2) <|L|> {{R}}.
   Proof.
-    iIntros "Hl2 Hbewp #Hvalid %Hdistinct".
-    iApply (ewp_xchg_r with "Hl2").
+    iIntros "Hl2 Hbrel #Hvalid %Hdistinct".
+    iApply (rel_xchg_r with "Hl2").
     iIntros "Hl2".
-    iApply ("Hbewp" with "Hl2 [//] [//]").
+    iApply ("Hbrel" with "Hl2 [//] [//]").
   Qed.
 
-  Lemma bewp_free_l L R k1 l1 v1 e2 :
+  Lemma brel_free_l L R k1 l1 v1 e2 :
     ▷ l1 ↦ v1 -∗
-    ▷ BEWP fill k1 #() ≤ e2 <|L|> {{R}} -∗
-    BEWP fill k1 (Free #l1) ≤ e2 <|L|> {{R}}.
+    ▷ BREL fill k1 #() ≤ e2 <|L|> {{R}} -∗
+    BREL fill k1 (Free #l1) ≤ e2 <|L|> {{R}}.
   Proof.
-    iIntros "Hl1 Hbewp #Hvalid %Hdistinct".
-    iApply (ewp_free_l with "Hl1").
-    iApply ("Hbewp" with "[//] [//]").
+    iIntros "Hl1 Hbrel #Hvalid %Hdistinct".
+    iApply (rel_free_l with "Hl1").
+    iApply ("Hbrel" with "[//] [//]").
   Qed.
 
-  Lemma bewp_free_r L R e1 k2 l2 v2 :
+  Lemma brel_free_r L R e1 k2 l2 v2 :
     l2 ↦ₛ v2 -∗
-    BEWP e1 ≤ fill k2 #() <|L|> {{R}} -∗
-    BEWP e1 ≤ fill k2 (Free #l2) <|L|> {{R}}.
+    BREL e1 ≤ fill k2 #() <|L|> {{R}} -∗
+    BREL e1 ≤ fill k2 (Free #l2) <|L|> {{R}}.
   Proof.
-    iIntros "Hl2 Hbewp #Hvalid %Hdistinct".
-    iApply (ewp_free_r with "Hl2").
-    iApply ("Hbewp" with "[//] [//]").
+    iIntros "Hl2 Hbrel #Hvalid %Hdistinct".
+    iApply (rel_free_r with "Hl2").
+    iApply ("Hbrel" with "[//] [//]").
   Qed.
 
-  Lemma bewp_faa_l L R k1 l1 (n1 m1 : Z) e2 :
+  Lemma brel_faa_l L R k1 l1 (n1 m1 : Z) e2 :
     ▷ l1 ↦ #n1 -∗
-    ▷ (l1 ↦ #(n1 + m1) -∗ BEWP fill k1 #n1 ≤ e2 <|L|> {{R}}) -∗
-    BEWP fill k1 (FAA #l1 #m1) ≤ e2 <|L|> {{R}}.
+    ▷ (l1 ↦ #(n1 + m1) -∗ BREL fill k1 #n1 ≤ e2 <|L|> {{R}}) -∗
+    BREL fill k1 (FAA #l1 #m1) ≤ e2 <|L|> {{R}}.
   Proof.
-    iIntros "Hl1 Hbewp #Hvalid %Hdistinct".
-    iApply (ewp_faa_l with "Hl1").
+    iIntros "Hl1 Hbrel #Hvalid %Hdistinct".
+    iApply (rel_faa_l with "Hl1").
     iIntros "!> Hl1".
-    iApply ("Hbewp" with "Hl1 [//] [//]").
+    iApply ("Hbrel" with "Hl1 [//] [//]").
   Qed.
 
-  Lemma bewp_faa_r L R e1 k2 l2 (n2 m2 : Z) :
+  Lemma brel_faa_r L R e1 k2 l2 (n2 m2 : Z) :
     l2 ↦ₛ #n2 -∗
-    (l2 ↦ₛ #(n2 + m2) -∗ BEWP e1 ≤ fill k2 #n2 <|L|> {{R}}) -∗
-    BEWP e1 ≤ fill k2 (FAA #l2 #m2) <|L|> {{R}}.
+    (l2 ↦ₛ #(n2 + m2) -∗ BREL e1 ≤ fill k2 #n2 <|L|> {{R}}) -∗
+    BREL e1 ≤ fill k2 (FAA #l2 #m2) <|L|> {{R}}.
   Proof.
-    iIntros "Hl2 Hbewp #Hvalid %Hdistinct".
-    iApply (ewp_faa_r with "Hl2").
+    iIntros "Hl2 Hbrel #Hvalid %Hdistinct".
+    iApply (rel_faa_r with "Hl2").
     iIntros "Hl2".
-    iApply ("Hbewp" with "Hl2 [//] [//]").
+    iApply ("Hbrel" with "Hl2 [//] [//]").
   Qed.
 
-  Lemma bewp_cmpxchg_fail_l L R k1 (l1 : loc) (u1 v1 w1 : val) e2 :
+  Lemma brel_cmpxchg_fail_l L R k1 (l1 : loc) (u1 v1 w1 : val) e2 :
     w1 ≠ u1 →
     vals_compare_safe w1 u1 →
     ▷ l1 ↦ w1 -∗
-    ▷ (l1 ↦ w1 -∗ BEWP fill k1 (w1, #false)%V ≤ e2 <|L|> {{R}}) -∗
-    BEWP fill k1 (CmpXchg #l1 u1 v1) ≤ e2 <|L|> {{R}}.
+    ▷ (l1 ↦ w1 -∗ BREL fill k1 (w1, #false)%V ≤ e2 <|L|> {{R}}) -∗
+    BREL fill k1 (CmpXchg #l1 u1 v1) ≤ e2 <|L|> {{R}}.
   Proof.
-    iIntros "%Hneq %Hsafe Hl1 Hbewp #Hvalid %Hdistinct".
-    iApply (ewp_cmpxchg_fail_l with "Hl1"); try done.
+    iIntros "%Hneq %Hsafe Hl1 Hbrel #Hvalid %Hdistinct".
+    iApply (rel_cmpxchg_fail_l with "Hl1"); try done.
     iIntros "!> Hl1".
-    iApply ("Hbewp" with "Hl1 [//] [//]").
+    iApply ("Hbrel" with "Hl1 [//] [//]").
   Qed.
 
-  Lemma bewp_cmpxchg_fail_r L R e1 k2 l2 (u2 v2 w2 : val) :
+  Lemma brel_cmpxchg_fail_r L R e1 k2 l2 (u2 v2 w2 : val) :
     w2 ≠ u2 →
     vals_compare_safe w2 u2 →
     l2 ↦ₛ w2 -∗
-    (l2 ↦ₛ w2 -∗ BEWP e1 ≤ fill k2 (w2, #false)%V <|L|> {{R}}) -∗
-    BEWP e1 ≤ fill k2 (CmpXchg #l2 u2 v2) <|L|> {{R}}.
+    (l2 ↦ₛ w2 -∗ BREL e1 ≤ fill k2 (w2, #false)%V <|L|> {{R}}) -∗
+    BREL e1 ≤ fill k2 (CmpXchg #l2 u2 v2) <|L|> {{R}}.
   Proof.
-    iIntros "%Hneq %Hsafe Hl2 Hbewp #Hvalid %Hdistinct".
-    iApply (ewp_cmpxchg_fail_r with "Hl2"); try done.
+    iIntros "%Hneq %Hsafe Hl2 Hbrel #Hvalid %Hdistinct".
+    iApply (rel_cmpxchg_fail_r with "Hl2"); try done.
     iIntros "Hl2".
-    iApply ("Hbewp" with "Hl2 [//] [//]").
+    iApply ("Hbrel" with "Hl2 [//] [//]").
   Qed.
 
-  Lemma bewp_cmpxchg_suc_l L R k1 l1 (u1 v1 : val) e2 :
+  Lemma brel_cmpxchg_suc_l L R k1 l1 (u1 v1 : val) e2 :
     val_is_unboxed u1 →
     ▷ l1 ↦ u1 -∗
-    ▷ (l1 ↦ v1 -∗ BEWP fill k1 (u1, #true)%V ≤ e2 <|L|> {{R}}) -∗
-    BEWP fill k1 (CmpXchg #l1 u1 v1) ≤ e2 <|L|> {{R}}.
+    ▷ (l1 ↦ v1 -∗ BREL fill k1 (u1, #true)%V ≤ e2 <|L|> {{R}}) -∗
+    BREL fill k1 (CmpXchg #l1 u1 v1) ≤ e2 <|L|> {{R}}.
   Proof.
-    iIntros "%Hsafe Hl1 Hbewp #Hvalid %Hdistinct".
-    iApply (ewp_cmpxchg_suc_l with "Hl1"); try done.
+    iIntros "%Hsafe Hl1 Hbrel #Hvalid %Hdistinct".
+    iApply (rel_cmpxchg_suc_l with "Hl1"); try done.
     iIntros "!> Hl1".
-    iApply ("Hbewp" with "Hl1 [//] [//]").
+    iApply ("Hbrel" with "Hl1 [//] [//]").
   Qed.
 
-  Lemma bewp_cmpxchg_suc_r L R e1 k2 l2 (u2 v2 : val) :
+  Lemma brel_cmpxchg_suc_r L R e1 k2 l2 (u2 v2 : val) :
     val_is_unboxed u2 →
     l2 ↦ₛ u2 -∗
-    (l2 ↦ₛ v2 -∗ BEWP e1 ≤ fill k2 (u2, #true)%V <|L|> {{R}}) -∗
-    BEWP e1 ≤ fill k2 (CmpXchg #l2 u2 v2) <|L|> {{R}}.
+    (l2 ↦ₛ v2 -∗ BREL e1 ≤ fill k2 (u2, #true)%V <|L|> {{R}}) -∗
+    BREL e1 ≤ fill k2 (CmpXchg #l2 u2 v2) <|L|> {{R}}.
   Proof.
-    iIntros "%Hsafe Hl2 Hbewp #Hvalid %Hdistinct".
-    iApply (ewp_cmpxchg_suc_r with "Hl2"); try done.
+    iIntros "%Hsafe Hl2 Hbrel #Hvalid %Hdistinct".
+    iApply (rel_cmpxchg_suc_r with "Hl2"); try done.
     iIntros "Hl2".
-    iApply ("Hbewp" with "Hl2 [//] [//]").
+    iApply ("Hbrel" with "Hl2 [//] [//]").
   Qed.
 
 End blaze_rules_state_and_concurrency_rules.
@@ -2777,38 +2777,38 @@ End blaze_rules_state_and_concurrency_rules.
 (* ------------------------------------------------------------------------- *)
 (* blaze: Rules for Allocating Effects and Managing Theories. *)
 
-Section bewp_effect_rules.
+Section brel_effect_rules.
   Context `{!blazeGS Σ}.
 
-  Lemma bewp_effect_l L R k1 s1 e1 e2 :
+  Lemma brel_effect_l L R k1 s1 e1 e2 :
     (▷ ∀ l1, is_label (DfracOwn 1) l1 ==∗
-      BEWP fill k1 (lbl_subst s1 l1 e1) ≤ e2 <|L|> {{R}}
+      BREL fill k1 (lbl_subst s1 l1 e1) ≤ e2 <|L|> {{R}}
     ) -∗
-    BEWP fill k1 (Effect s1 e1) ≤ e2 <|L|> {{R}}.
+    BREL fill k1 (Effect s1 e1) ≤ e2 <|L|> {{R}}.
   Proof.
-    iIntros "Hbewp #Hvalid %Hdistinct".
-    iApply ewp_effect_l. iIntros "!> %l1 Hl1".
-    by iApply ("Hbewp" with "Hl1").
+    iIntros "Hbrel #Hvalid %Hdistinct".
+    iApply rel_effect_l. iIntros "!> %l1 Hl1".
+    by iApply ("Hbrel" with "Hl1").
   Qed.
 
-  Lemma bewp_effect_r L R e1 k2 s2 e2 :
+  Lemma brel_effect_r L R e1 k2 s2 e2 :
     (∀ l2, spec_label (DfracOwn 1) l2 ==∗
-      BEWP e1 ≤ fill k2 (lbl_subst s2 l2 e2) <|L|> {{R}}
+      BREL e1 ≤ fill k2 (lbl_subst s2 l2 e2) <|L|> {{R}}
     ) -∗
-    BEWP e1 ≤ fill k2 (Effect s2 e2) <|L|> {{R}}.
+    BREL e1 ≤ fill k2 (Effect s2 e2) <|L|> {{R}}.
   Proof.
-    iIntros "Hbewp #Hvalid %Hdistinct".
-    iApply ewp_effect_r. iIntros "%l2 Hl2".
-    by iApply ("Hbewp" with "Hl2").
+    iIntros "Hbrel #Hvalid %Hdistinct".
+    iApply rel_effect_r. iIntros "%l2 Hl2".
+    by iApply ("Hbrel" with "Hl2").
   Qed.
 
-  Lemma bewp_new_theory e1 e2 L R :
-    BEWP e1 ≤ e2 <|([], [], iThyBot) :: L|> {{R}} -∗
-    BEWP e1 ≤ e2 <|L|> {{R}}.
+  Lemma brel_new_theory e1 e2 L R :
+    BREL e1 ≤ e2 <|([], [], iThyBot) :: L|> {{R}} -∗
+    BREL e1 ≤ e2 <|L|> {{R}}.
   Proof.
-    iIntros "Hbewp [#Hvalid_l #Hvalid_r] [%Hdistinct_l %Hdistinct_r]".
-    iApply (ewp_introduction_mono with "[Hbewp]").
-    { iApply "Hbewp".
+    iIntros "Hbrel [#Hvalid_l #Hvalid_r] [%Hdistinct_l %Hdistinct_r]".
+    iApply (rel_introduction_mono with "[Hbrel]").
+    { iApply "Hbrel".
       - iSplit.
         + by rewrite /valid_l labels_l_cons //=.
         + by rewrite /valid_r labels_r_cons //=.
@@ -2819,56 +2819,56 @@ Section bewp_effect_rules.
     { by iApply iThy_le_to_iThy_1. }
   Qed.
 
-  Lemma bewp_add_label_l e1 e2 l1 l1s l2s L R :
+  Lemma brel_add_label_l e1 e2 l1 l1s l2s L R :
     is_label (DfracOwn 1) l1 -∗
-    BEWP e1 ≤ e2 <|((l1 :: l1s, l2s, iThyBot) :: L)|> {{R}} -∗
-    BEWP e1 ≤ e2 <|((l1s, l2s, iThyBot) :: L)|> {{R}}.
+    BREL e1 ≤ e2 <|((l1 :: l1s, l2s, iThyBot) :: L)|> {{R}} -∗
+    BREL e1 ≤ e2 <|((l1s, l2s, iThyBot) :: L)|> {{R}}.
   Proof.
-    iIntros "Hl1 Hbewp
+    iIntros "Hl1 Hbrel
       [#Hvalid_l1s #Hvalid_l2s]
       [%Hdistinct_l1s %Hdistinct_l2s]".
     iDestruct (distinct_l_cons with "[$] [$] [//]") as %Hdistinct_cons_l1s.
-    iApply fupd_ewp.
+    iApply fupd_rel.
     iMod (is_label_persist with "Hl1") as "#Hl1". iModIntro.
-    iSpecialize ("Hbewp" with "[] []").
+    iSpecialize ("Hbrel" with "[] []").
     { iSplit; [|done]. rewrite !/valid_l !labels_l_cons //=. by iSplit. }
     { by iSplit. }
-    iApply (ewp_introduction_mono with "Hbewp").
+    iApply (rel_introduction_mono with "Hbrel").
     iApply (iThy_le_trans _ (to_iThy L)).
     { by iApply iThy_le_to_iThy_1. }
     { by iApply iThy_le_to_iThy_2. }
   Qed.
 
-  Lemma bewp_add_label_r e1 e2 l1s l2 l2s L R :
+  Lemma brel_add_label_r e1 e2 l1s l2 l2s L R :
     spec_label (DfracOwn 1) l2 -∗
-    BEWP e1 ≤ e2 <|((l1s, l2 :: l2s, iThyBot) :: L)|> {{R}} -∗
-    BEWP e1 ≤ e2 <|((l1s, l2s, iThyBot) :: L)|> {{R}}.
+    BREL e1 ≤ e2 <|((l1s, l2 :: l2s, iThyBot) :: L)|> {{R}} -∗
+    BREL e1 ≤ e2 <|((l1s, l2s, iThyBot) :: L)|> {{R}}.
   Proof.
-    iIntros "Hl2 Hbewp
+    iIntros "Hl2 Hbrel
       [#Hvalid_l1s #Hvalid_l2s]
       [%Hdistinct_l1s %Hdistinct_l2s]".
     iDestruct (distinct_r_cons with "[$] [$] [//]") as %Hdistinct_cons_l2s.
-    iApply fupd_ewp.
+    iApply fupd_rel.
     iMod (spec_label_persist with "Hl2") as "#Hl2". iModIntro.
-    iSpecialize ("Hbewp" with "[] []").
+    iSpecialize ("Hbrel" with "[] []").
     { iSplit; [done|]. rewrite !/valid_r !labels_r_cons //=. by iSplit. }
     { by iSplit. }
-    iApply (ewp_introduction_mono with "Hbewp").
+    iApply (rel_introduction_mono with "Hbrel").
     iApply (iThy_le_trans _ (to_iThy L)).
     { by iApply iThy_le_to_iThy_1. }
     { by iApply iThy_le_to_iThy_2. }
   Qed.
 
-  Lemma bewp_exhaustion e1 e2 k1 k2 (X Y : iThy Σ) L R S l1s l2s :
+  Lemma brel_exhaustion e1 e2 k1 k2 (X Y : iThy Σ) L R S l1s l2s :
     ectx_labels k1 ⊆ l1s →
     ectx_labels k2 ⊆ l2s →
 
-    BEWP e1 ≤ e2 <|((l1s, l2s, X) :: L)|> {{R}} -∗
+    BREL e1 ≤ e2 <|((l1s, l2s, X) :: L)|> {{R}} -∗
 
     ((* Value case. *)
       (□ ∀ v1 v2,
       R v1 v2 -∗
-      BEWP fill k1 v1 ≤ fill k2 v2 <|((l1s, l2s, Y) :: L)|> {{S}})
+      BREL fill k1 v1 ≤ fill k2 v2 <|((l1s, l2s, Y) :: L)|> {{S}})
 
       ∧
 
@@ -2878,48 +2878,48 @@ Section bewp_effect_rules.
       ⌜ NeutralEctx l2s k2' ⌝ →
       X e1' e2' Q -∗
       (□ ▷ ∀ s1' s2', Q s1' s2' -∗
-      BEWP fill k1' s1' ≤ fill k2' s2' <|((l1s, l2s, X) :: L)|> {{R}}) -∗
-      BEWP fill (k1 ++ k1') e1' ≤ fill (k2 ++ k2') e2' <|((l1s, l2s, Y) :: L)|> {{S}})
+      BREL fill k1' s1' ≤ fill k2' s2' <|((l1s, l2s, X) :: L)|> {{R}}) -∗
+      BREL fill (k1 ++ k1') e1' ≤ fill (k2 ++ k2') e2' <|((l1s, l2s, Y) :: L)|> {{S}})
     ) -∗
 
-    BEWP fill k1 e1 ≤ fill k2 e2 <|((l1s, l2s, Y) :: L)|> {{S}}.
+    BREL fill k1 e1 ≤ fill k2 e2 <|((l1s, l2s, Y) :: L)|> {{S}}.
   Proof.
-    iIntros (Hk1 Hk2) "Hbewp [#Hvalue #Heffect] #Hvalid %Hdistinct".
-    iApply (ewp_introduction_mono with "[Hbewp]"); last iApply iThy_le_sum_to_iThy.
-    iApply (ewp_exhaustion_sum_r' MS with "[] [Hbewp]").
+    iIntros (Hk1 Hk2) "Hbrel [#Hvalue #Heffect] #Hvalid %Hdistinct".
+    iApply (rel_introduction_mono with "[Hbrel]"); last iApply iThy_le_sum_to_iThy.
+    iApply (rel_exhaustion_sum_r' MS with "[] [Hbrel]").
     { by iApply (traversable_ectx_labels k1 k2 l1s l2s X). }
-    { iApply (ewp_introduction_mono with "[Hbewp]").
-      { by iApply "Hbewp". } { by iApply iThy_le_to_iThy_sum. }
+    { iApply (rel_introduction_mono with "[Hbrel]").
+      { by iApply "Hbrel". } { by iApply iThy_le_to_iThy_sum. }
     }
     clear e1 e2. simpl.
     iIntros "!>". iSplit.
     - iIntros (v1 v2) "HR".
-      iApply (ewp_introduction_mono with "[HR]"); last iApply iThy_le_to_iThy_sum.
+      iApply (rel_introduction_mono with "[HR]"); last iApply iThy_le_to_iThy_sum.
       by iApply ("Hvalue" with "HR").
     - iIntros "%e1 %e2 %Q HX #Hk".
       iDestruct "HX" as
         "[%e1' [%e2' [%k1' [%k2' [%Q' (-> & % & -> & % & HX & # HQ')]]]]]".
-      iApply (ewp_introduction_mono with "[HX]"); last iApply iThy_le_to_iThy_sum.
+      iApply (rel_introduction_mono with "[HX]"); last iApply iThy_le_to_iThy_sum.
       rewrite -!fill_app.
       iApply ("Heffect" with "[//] [//] HX"); try done.
       iIntros "!> !> %s1' %s2' HQ".
       iSpecialize ("HQ'" with "HQ").
       iSpecialize ("Hk" with "HQ'").
       iIntros "_ _".
-      iApply (ewp_introduction_mono with "[Hk]"); last iApply iThy_le_sum_to_iThy.
+      iApply (rel_introduction_mono with "[Hk]"); last iApply iThy_le_sum_to_iThy.
       iApply "Hk".
   Qed.
 
-  Lemma bewp_exhaustion' (m : mode) e1 e2 k1 k2 (X Y : iThy Σ) L R S l1s l2s :
+  Lemma brel_exhaustion' (m : mode) e1 e2 k1 k2 (X Y : iThy Σ) L R S l1s l2s :
     ectx_labels k1 ⊆ l1s →
     ectx_labels k2 ⊆ l2s →
 
-    BEWP e1 ≤ e2 <|((l1s, l2s, X) :: L)|> {{R}} -∗
+    BREL e1 ≤ e2 <|((l1s, l2s, X) :: L)|> {{R}} -∗
 
     ((* Value case. *)
       (□?m ∀ v1 v2,
       R v1 v2 -∗
-      BEWP fill k1 v1 ≤ fill k2 v2 <|((l1s, l2s, Y) :: (to_iThyIfMono m L))|> {{S}})
+      BREL fill k1 v1 ≤ fill k2 v2 <|((l1s, l2s, Y) :: (to_iThyIfMono m L))|> {{S}})
 
       ∧
 
@@ -2929,16 +2929,16 @@ Section bewp_effect_rules.
       ⌜ NeutralEctx l2s k2' ⌝ →
       X e1' e2' Q -∗
       (□?m ▷ ∀ s1' s2', Q s1' s2' -∗
-      BEWP fill k1' s1' ≤ fill k2' s2' <|((l1s, l2s, X) :: L)|> {{R}}) -∗
-      BEWP fill (k1 ++ k1') e1' ≤ fill (k2 ++ k2') e2' <|((l1s, l2s, Y) :: (to_iThyIfMono m L))|> {{S}})
+      BREL fill k1' s1' ≤ fill k2' s2' <|((l1s, l2s, X) :: L)|> {{R}}) -∗
+      BREL fill (k1 ++ k1') e1' ≤ fill (k2 ++ k2') e2' <|((l1s, l2s, Y) :: (to_iThyIfMono m L))|> {{S}})
     ) -∗
 
-    BEWP fill k1 e1 ≤ fill k2 e2 <|((l1s, l2s, Y) :: (to_iThyIfMono m L))|> {{S}}.
+    BREL fill k1 e1 ≤ fill k2 e2 <|((l1s, l2s, Y) :: (to_iThyIfMono m L))|> {{S}}.
   Proof.
-    destruct m=>//; [|rewrite //= !to_iThyIfMonoMS; by apply bewp_exhaustion].
+    destruct m=>//; [|rewrite //= !to_iThyIfMonoMS; by apply brel_exhaustion].
 
-    iIntros (Hk1 Hk2) "Hbewp Hfill #Hvalid %Hdistinct".
-    iApply (ewp_introduction_mono with "[Hbewp Hfill]"); last (
+    iIntros (Hk1 Hk2) "Hbrel Hfill #Hvalid %Hdistinct".
+    iApply (rel_introduction_mono with "[Hbrel Hfill]"); last (
       iApply iThy_le_trans; last iApply iThy_le_sum_to_iThy;
       iApply iThy_le_sum_map; first iApply iThy_le_refl;
       iApply iThy_le_to_iThy_to_iThyIfMono
@@ -2956,18 +2956,18 @@ Section bewp_effect_rules.
       - by rewrite !labels_r_cons //= labels_r_to_iThyIfMono.
     }
 
-    iApply (ewp_exhaustion_sum_r' OS with "[] [Hbewp] [Hfill]").
+    iApply (rel_exhaustion_sum_r' OS with "[] [Hbrel] [Hfill]").
     { by iApply (traversable_ectx_labels k1 k2 l1s l2s Y). }
 
-    { iApply (ewp_introduction_mono with "[Hbewp]").
-      { by iApply "Hbewp". }
+    { iApply (rel_introduction_mono with "[Hbrel]").
+      { by iApply "Hbrel". }
       { by iApply iThy_le_to_iThy_sum. }
     }
 
     clear e1 e2. simpl. iSplit.
 
     - iIntros (v1 v2) "HR".
-      iApply (ewp_introduction_mono with "[Hfill HR]"); first
+      iApply (rel_introduction_mono with "[Hfill HR]"); first
       iApply ("Hfill" with "HR"); try done.
       iApply iThy_le_trans; first iApply iThy_le_to_iThy_sum.
       iApply iThy_le_sum_map; first iApply iThy_le_refl.
@@ -2976,7 +2976,7 @@ Section bewp_effect_rules.
     - iIntros "%e1 %e2 %Q HX Hk".
       iDestruct "HX" as
         "[%e1' [%e2' [%k1' [%k2' [%Q' (-> & % & -> & % & HX & # HQ')]]]]]".
-      iApply (ewp_introduction_mono with "[Hfill Hk HX]"); last (
+      iApply (rel_introduction_mono with "[Hfill Hk HX]"); last (
       iApply iThy_le_trans; first iApply iThy_le_to_iThy_sum;
       iApply iThy_le_sum_map; first iApply iThy_le_refl;
       by iApply (iThy_le_to_iThyIfMono_to_iThy OS)
@@ -2988,33 +2988,33 @@ Section bewp_effect_rules.
       iSpecialize ("HQ'" with "HQ").
       iSpecialize ("Hk" with "HQ'").
       iIntros "_ _".
-      iApply (ewp_introduction_mono with "[Hk]"); last iApply iThy_le_sum_to_iThy.
+      iApply (rel_introduction_mono with "[Hk]"); last iApply iThy_le_sum_to_iThy.
       iApply "Hk".
   Qed.
 
-  Lemma bewp_bind k1 k2 (L M : iLblThy Σ) R e1 e2 :
+  Lemma brel_bind k1 k2 (L M : iLblThy Σ) R e1 e2 :
     traversable k1 k2 (to_iThy L) -∗
     to_iThy_le L M -∗
-    BEWP e1 ≤ e2 <|L|> {{ v1; v2, BEWP fill k1 v1 ≤ fill k2 v2 <|M|> {{R}} }} -∗
-    BEWP fill k1 e1 ≤ fill k2 e2 <|M|> {{R}}.
+    BREL e1 ≤ e2 <|L|> {{ v1; v2, BREL fill k1 v1 ≤ fill k2 v2 <|M|> {{R}} }} -∗
+    BREL fill k1 e1 ≤ fill k2 e2 <|M|> {{R}}.
   Proof.
-    iIntros "#Htraversable (#Hle & #HvalidLM & #HdistinctLM) Hbewp #Hvalid %Hdistinct".
-    iApply (ewp_bind with "[] Hle [Hbewp]"); first iApply "Htraversable".
-    iApply (ewp_wand with "[Hbewp]").
-    { by iApply "Hbewp"; [iApply "HvalidLM"|iApply "HdistinctLM"]. }
-    { iIntros "!> %% Hbewp". by iApply "Hbewp". }
+    iIntros "#Htraversable (#Hle & #HvalidLM & #HdistinctLM) Hbrel #Hvalid %Hdistinct".
+    iApply (rel_bind with "[] Hle [Hbrel]"); first iApply "Htraversable".
+    iApply (rel_wand with "[Hbrel]").
+    { by iApply "Hbrel"; [iApply "HvalidLM"|iApply "HdistinctLM"]. }
+    { iIntros "!> %% Hbrel". by iApply "Hbrel". }
   Qed.
 
-  Lemma bewp_bind' k1 k2 (L : iLblThy Σ) R e1 e2 :
+  Lemma brel_bind' k1 k2 (L : iLblThy Σ) R e1 e2 :
     traversable k1 k2 (to_iThy L) -∗
-    BEWP e1 ≤ e2 <|L|> {{ v1; v2, BEWP fill k1 v1 ≤ fill k2 v2 <|L|> {{R}} }} -∗
-    BEWP fill k1 e1 ≤ fill k2 e2 <|L|> {{R}}.
+    BREL e1 ≤ e2 <|L|> {{ v1; v2, BREL fill k1 v1 ≤ fill k2 v2 <|L|> {{R}} }} -∗
+    BREL fill k1 e1 ≤ fill k2 e2 <|L|> {{R}}.
   Proof.
-    iIntros "#Htraversable Hbewp #Hvalid %Hdistinct".
-    iApply (ewp_bind' with "[] [Hbewp]"); first iApply "Htraversable".
-    iApply (ewp_wand with "[Hbewp]").
-    { by iApply "Hbewp". }
-    { iIntros "!> %% Hbewp". by iApply "Hbewp". }
+    iIntros "#Htraversable Hbrel #Hvalid %Hdistinct".
+    iApply (rel_bind' with "[] [Hbrel]"); first iApply "Htraversable".
+    iApply (rel_wand with "[Hbrel]").
+    { by iApply "Hbrel". }
+    { iIntros "!> %% Hbrel". by iApply "Hbrel". }
   Qed.
 
   Lemma distinct_l_app_NeutralEctx k1 l1s l2s X (L M : iLblThy Σ) :
@@ -3047,19 +3047,19 @@ Section bewp_effect_rules.
     by apply (Hdistinct l).
   Qed.
 
-  Lemma bewp_bind'' k1 k2 (L M N : iLblThy Σ) R e1 e2 :
+  Lemma brel_bind'' k1 k2 (L M N : iLblThy Σ) R e1 e2 :
     ectx_labels k1 ⊆ labels_l M →
     ectx_labels k2 ⊆ labels_r M →
     to_iThy_le (L ++ M) N -∗
-    BEWP e1 ≤ e2 <|L|> {{ v1; v2, BEWP fill k1 v1 ≤ fill k2 v2 <|N|> {{R}} }} -∗
-    BEWP fill k1 e1 ≤ fill k2 e2 <|N|> {{R}}.
+    BREL e1 ≤ e2 <|L|> {{ v1; v2, BREL fill k1 v1 ≤ fill k2 v2 <|N|> {{R}} }} -∗
+    BREL fill k1 e1 ≤ fill k2 e2 <|N|> {{R}}.
   Proof.
-    iIntros "%Hlabels_l %Hlabels_r #Hto_iThy_le Hbewp".
+    iIntros "%Hlabels_l %Hlabels_r #Hto_iThy_le Hbrel".
     iAssert (□ (_ ∗ _ ∗ _))%I as "(#Hle & #Hvalid & #Hdistinct)".
     { iIntros "!>". by iApply "Hto_iThy_le". }
-    iApply bewp_learn.
+    iApply brel_learn.
     iIntros "#Hdistinct_N #Hvalid_N".
-    iApply (bewp_bind with "[] [] Hbewp").
+    iApply (brel_bind with "[] [] Hbrel").
     { iIntros "!>" (e1' e2' Q) "[%l1s [%l2s [%X [%Hin HL]]]]".
       iDestruct ("Hdistinct" with "Hdistinct_N") as "[%Hl %Hr]".
       specialize (distinct_l_app_NeutralEctx _ _ _ _ _ _ Hl Hlabels_l Hin) as Hk1.
@@ -3076,4 +3076,4 @@ Section bewp_effect_rules.
     }
   Qed.
 
-End bewp_effect_rules.
+End brel_effect_rules.

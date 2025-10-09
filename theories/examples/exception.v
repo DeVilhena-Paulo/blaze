@@ -59,14 +59,14 @@ Section verification.
     option_bind_ectx (fs ++ fs') = option_bind_ectx fs ++ option_bind_ectx fs'.
   Proof. by induction fs as [|f fs]; [|rewrite //= IHfs //=]. Qed.
 
-  Lemma ewp_fill_option_bind_ectx_r e1 k fs X R :
-    EWP e1 ≤ fill k (InjLV #()) <|X|> {{R}} -∗
-    EWP e1 ≤ fill k (fill (option_bind_ectx fs) (InjLV #())) <|X|> {{R}}.
+  Lemma rel_fill_option_bind_ectx_r e1 k fs X R :
+    REL e1 ≤ fill k (InjLV #()) <|X|> {{R}} -∗
+    REL e1 ≤ fill k (fill (option_bind_ectx fs) (InjLV #())) <|X|> {{R}}.
   Proof.
-    iInduction fs as [|f fs] "IH" forall (k); iIntros "Hewp"; [done|]; simpl.
+    iInduction fs as [|f fs] "IH" forall (k); iIntros "Hrel"; [done|]; simpl.
     iSpecialize ("IH" $! (k ++ [AppLCtx f; AppRCtx option_bind])).
     rewrite !fill_app //=. iApply "IH".
-    rewrite /option_bind. by ewp_pures_r.
+    rewrite /option_bind. by rel_pures_r.
   Qed.
 
   Program Definition Error (error : label) : iThy Σ := (λ e1 e2, λne Q, ∃ k fs,
@@ -97,8 +97,8 @@ Section verification.
       | InjR "y" => "y"
       end)%V
     in
-    (□ ∀ x, EWP f1 x ≤ f2 x <|X|> {{both_opt}}) -∗
-    EWP list_map f1_exn (list_to_val xs) ≤
+    (□ ∀ x, REL f1 x ≤ f2 x <|X|> {{both_opt}}) -∗
+    REL list_map f1_exn (list_to_val xs) ≤
         list_map_opt f2 (list_to_val xs)
         <|iThySum (Error error) X|> {{v1; v2,
       ∃ (ys : list val), ⌜ v1 = list_to_val ys ⌝ ∗ ⌜ v2 = InjRV (list_to_val ys) ⌝
@@ -107,33 +107,33 @@ Section verification.
     iIntros (HX ?) "#Hf".
     iInduction xs as [|x xs] "IH";
     rewrite /list_map /list_map_opt.
-    - ewp_pures_l. ewp_pures_r. by iExists [].
+    - rel_pures_l. rel_pures_r. by iExists [].
     - rewrite /option_bind /f1_exn.
-      ewp_pures_l. ewp_pures_r.
-      iApply (ewp_bind [AppRCtx _; CaseCtx _ _] [AppLCtx _; AppRCtx _] _ _ X).
+      rel_pures_l. rel_pures_r.
+      iApply (rel_bind [AppRCtx _; CaseCtx _ _] [AppLCtx _; AppRCtx _] _ _ X).
       { by iApply HX; set_solver. }
       { by iApply iThy_le_sum_r_2. }
-      iApply (ewp_wand with "Hf"). iIntros "!>" (v1 v2) "[-> [->|[%y ->]]]".
-      + simpl. ewp_pures_l. ewp_pures_r.
-        iApply ewp_introduction'. iLeft. iExists [AppRCtx _], [].
+      iApply (rel_wand with "Hf"). iIntros "!>" (v1 v2) "[-> [->|[%y ->]]]".
+      + simpl. rel_pures_l. rel_pures_r.
+        iApply rel_introduction'. iLeft. iExists [AppRCtx _], [].
         iSplit; [iPureIntro; set_solver|]. by iSplit.
       + simpl.
-        do 6 ewp_pure_l. do 7 ewp_pure_r.
-        iApply (ewp_bind' [AppRCtx _] [AppLCtx _; AppRCtx _]).
+        do 6 rel_pure_l. do 7 rel_pure_r.
+        iApply (rel_bind' [AppRCtx _] [AppLCtx _; AppRCtx _]).
         { iApply traversable_sum.
           * by iApply (traversable_Error error [_]); set_solver.
           * by iApply HX; set_solver.
         }
         simpl.
-        iApply (ewp_wand with "IH").
-        iIntros "!> %% [% [-> ->]]". ewp_pures_l. ewp_pures_r.
+        iApply (rel_wand with "IH").
+        iIntros "!> %% [% [-> ->]]". rel_pures_l. rel_pures_r.
         by iExists (y :: ys).
   Qed.
 
   Lemma list_map_exn_refines_opt (f1 f2 : val) (xs : list val) (error : label) X :
     (∀ k1 k2, ectx_labels k1 ⊆ [error] → ectx_labels k2 ⊆ [] → ⊢ traversable k1 k2 X) →
-    (□ ∀ x, EWP f1 x ≤ f2 x <|X|> {{both_opt}}) -∗
-    EWP list_map_exn error f1 (list_to_val xs) ≤
+    (□ ∀ x, REL f1 x ≤ f2 x <|X|> {{both_opt}}) -∗
+    REL list_map_exn error f1 (list_to_val xs) ≤
         list_map_opt f2 (list_to_val xs) <|X|>
         {{v1; v2, ⌜ v1 = v2 ⌝ ∗ 
            (⌜ v2 = InjLV #() ⌝ ∨ ∃ (ys : list val), ⌜ v2 = InjRV (list_to_val ys) ⌝)
@@ -141,19 +141,19 @@ Section verification.
   Proof.
     iIntros (HX) "#Hf".
     rewrite /list_map_exn /list_map_opt //=.
-    ewp_pures_l.
-    iApply ewp_introduction_mono; last iApply iThy_le_sum_bot_r.
-    iApply (ewp_exhaustion_sum_l [HandleCtx _ _ _ _ _] [] _ _ _ (Error error)).
+    rel_pures_l.
+    iApply rel_introduction_mono; last iApply iThy_le_sum_bot_r.
+    iApply (rel_exhaustion_sum_l [HandleCtx _ _ _ _ _] [] _ _ _ (Error error)).
     { by iApply HX; set_solver. }
-    { iApply ewp_introduction_mono; last iApply iThy_le_sum_swap.
+    { iApply rel_introduction_mono; last iApply iThy_le_sum_swap.
       by iApply list_map_refines_opt. }
     { iIntros "!>"; iSplit.
-      - iIntros (??) "[%ys [-> ->]]". ewp_pures_l. iPureIntro.
+      - iIntros (??) "[%ys [-> ->]]". rel_pures_l. iPureIntro.
         split; [done|]. right. by exists ys.
       - iIntros (???) "[%k [%fs (%Hk & -> & ->)]] _". simpl.
-        ewp_pures_l.
-        iApply ewp_fill_option_bind_ectx_r.
-        by iApply ewp_value; auto.
+        rel_pures_l.
+        iApply rel_fill_option_bind_ectx_r.
+        by iApply rel_value; auto.
     }
   Qed.
 

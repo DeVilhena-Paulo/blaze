@@ -198,14 +198,14 @@ Section proof_of_divergence.
 
   Lemma main_diverges_toplevel σ : adequate NotStuck main σ (λ _ _, False).
   Proof.
-    assert (∀ {H: blazeGS blazeΣ}, ⊢ EWP main ≤ (#() #())%E <|iThyBot|> {{_; _, ⌜ False ⌝}}) as Hmain.
-    { intros ?. rewrite ewp_unfold /ewp_pre.
+    assert (∀ {H: blazeGS blazeΣ}, ⊢ REL main ≤ (#() #())%E <|iThyBot|> {{_; _, ⌜ False ⌝}}) as Hmain.
+    { intros ?. rewrite rel_unfold /rel_pre.
       iIntros (k1 k2 S) "Hkwp".
       rewrite obs_refines_eq /obs_refines_def.
       iIntros "%j %k #Hspec Hj". iApply (wp_bind k1).
       iApply wp_mono; last iApply main_diverges. by iIntros (??).
     }
-    eapply (@adequate_mono blazeΣ), (@ewp_adequacy blazeΣ _ main _ σ σ  (λ _ _, False) Hmain).
+    eapply (@adequate_mono blazeΣ), (@rel_adequacy blazeΣ _ main _ σ σ  (λ _ _, False) Hmain).
     { by apply subG_blazeGpreS, subG_refl. }
     by intros ?? [? [? [? [? HFalse]]]].
   Qed.

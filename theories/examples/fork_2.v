@@ -57,7 +57,7 @@ Section verification.
             j ⤇ fill k e2 ∗
             ∀ l,
             ▷ preInv l -∗
-            BEWP Val k1 #() ≤ e2 <|[([fork], [], iThyBot)]|> {{ _; _, postInv l }}
+            BREL Val k1 #() ≤ e2 <|[([fork], [], iThyBot)]|> {{ _; _, postInv l }}
         end
     )%I.
 
@@ -150,13 +150,13 @@ Section verification.
             j ⤇ fill k e2 ∗
             ∀ l,
             ▷ preInv l -∗
-            BEWP Val k1 #() ≤ e2 <|[([fork], [], iThyBot)]|> {{ _; _, postInv l }}
+            BREL Val k1 #() ≤ e2 <|[([fork], [], iThyBot)]|> {{ _; _, postInv l }}
         end
       ) -∗
       is_queue s k1s -∗
       ∃ l' j k (e2 : expr),
       j ⤇ fill k e2 ∗
-      BEWP Val k1 #() ≤ e2 <|[([fork], [], iThyBot)]|> {{ _; _, postInv l' }} ∗
+      BREL Val k1 #() ≤ e2 <|[([fork], [], iThyBot)]|> {{ _; _, postInv l' }} ∗
       □ (∀ (v : val), postInv l' -∗ j ⤇ fill k v -∗ postInv l).
     Proof.
       iIntros (Heq) "Hl Hs".
@@ -187,7 +187,7 @@ Section verification.
             j ⤇ fill k e2 ∗
             ∀ l,
             ▷ preInv l -∗
-            BEWP Val k1 #() ≤ e2 <|[([fork], [], iThyBot)]|> {{ _; _, postInv l }}
+            BREL Val k1 #() ≤ e2 <|[([fork], [], iThyBot)]|> {{ _; _, postInv l }}
         end
       ) -∗
       is_queue s [] -∗
@@ -202,16 +202,16 @@ Section verification.
     Qed.
 
     Lemma run_refines (e1 e2 : expr) l :
-      BEWP e1 ≤ e2 <|[(([fork], [], COOP fork))]|> {{ _; _, True }} -∗
+      BREL e1 ≤ e2 <|[(([fork], [], COOP fork))]|> {{ _; _, True }} -∗
       preInv l -∗
-      BEWP fork_handler e1 ≤ e2 <|[(([fork], [], iThyBot))]|> {{ _; _, postInv l }}.
+      BREL fork_handler e1 ≤ e2 <|[(([fork], [], iThyBot))]|> {{ _; _, postInv l }}.
     Proof.
-      iIntros "Hbewp".
+      iIntros "Hbrel".
       iLöb as "IH" forall (e1 e2 l).
       iIntros "HpreInv".
-      iApply (bewp_exhaustion' OS with "Hbewp"); try done. iSplit.
+      iApply (brel_exhaustion' OS with "Hbrel"); try done. iSplit.
       - iIntros (??) "_".
-        bewp_pures_l.
+        brel_pures_l.
         rewrite preInv_unfold.
         iDestruct "HpreInv" as "[Hqueue Hl]".
         iApply (queue_empty_spec with "Hqueue").
@@ -219,46 +219,46 @@ Section verification.
         case_eq (reverse (omap id l.*1.*1)); [|intros k1 k1s]; intros Heq.
         + specialize (reverse_eq_nil _ Heq) as Heq'.
           rewrite Heq'.
-          bewp_pures_l.
+          brel_pures_l.
           by iApply (establish_postInv with "Hl Hqueue").
         + specialize (f_equal reverse Heq) as Heq'.
           rewrite reverse_involutive reverse_cons in Heq'.
           rewrite Heq' length_app Nat.add_1_r //=.
-          bewp_pures_l.
+          brel_pures_l.
           iApply (queue_take_spec with "Hqueue").
           iIntros "!> Hqueue".
           iDestruct (exploit_preInv with "Hl Hqueue") as "H"; first done.
           iDestruct "H" as "[%l' [%j [%k [%e2' (Hj & Hk1 & #Hpost)]]]]".
-          iApply (bewp_logical_fork with "Hj [Hk1]").
+          iApply (brel_logical_fork with "Hj [Hk1]").
           { simpl. by iApply "Hk1". }
-          iIntros (??) "Hl' Hj". iApply bewp_value.
+          iIntros (??) "Hl' Hj". iApply brel_value.
           by iApply ("Hpost" with "Hl' Hj").
       - clear e1 e2.
         iIntros "%k1 %k2 %e1 %e2 %Q %Hk1 %Hk2 HCOOP Hk".
         rewrite COOP_unfold /COOP_pre //=.
-        iDestruct "HCOOP" as "[%task1 [%task2 (->& -> & Hbewp & HQ)]]".
-        bewp_pures_l. { by apply neutral_ectx; set_solver. }
+        iDestruct "HCOOP" as "[%task1 [%task2 (->& -> & Hbrel & HQ)]]".
+        brel_pures_l. { by apply neutral_ectx; set_solver. }
         iSpecialize ("Hk" with "HQ").
         rewrite preInv_unfold.
         iDestruct "HpreInv" as "[Hqueue Hl]".
         iApply (queue_add_spec with "Hqueue").
-        iIntros "!> Hqueue". bewp_pures_l.
-        iApply bewp_fork_r.
+        iIntros "!> Hqueue". brel_pures_l.
+        iApply brel_fork_r.
         iIntros (i) "Hi".
-        iApply (bewp_thread_swap _ _ _ [] with "Hi").
+        iApply (brel_thread_swap _ _ _ [] with "Hi").
         iIntros (j k) "Hj". simpl.
         unfold run.
-        bewp_pures_l.
-        iApply (bewp_wand' _ _ _ (λ _ _, postInv ((Some _, j, k) :: l))%I).
+        brel_pures_l.
+        iApply (brel_wand' _ _ _ (λ _ _, postInv ((Some _, j, k) :: l))%I).
         { iIntros "!> _ _ [Hs Hl]". simpl.
           iDestruct "Hl" as "[[%v Hj] Hl]".
           iExists v. by iFrame.
         }
-        iApply ("IH" with "Hbewp").
+        iApply ("IH" with "Hbrel").
         rewrite preInv_unfold /preInv_pre.
         simpl. iFrame.
         clear l. iIntros (l) "HpreInv".
-        bewp_pures_l.
+        brel_pures_l.
         by iApply ("IH" with "Hk HpreInv").
     Qed.
 
@@ -289,37 +289,37 @@ Section verification.
 
     (∀ (fork1 fork2 : val) (L : iLblThy Σ),
       □ (∀ (task1 task2 : val),
-         BEWP task1 #() ≤ task2 #() <|L|> {{ _; _, True }} -∗
-         BEWP fork1 task1 ≤ fork2 task2 <|L|> {{ _; _, True }}
+         BREL task1 #() ≤ task2 #() <|L|> {{ _; _, True }} -∗
+         BREL fork1 task1 ≤ fork2 task2 <|L|> {{ _; _, True }}
       ) -∗
-      BEWP main1 fork1 ≤ main2 fork2 <|L|> {{ _; _, True }}
+      BREL main1 fork1 ≤ main2 fork2 <|L|> {{ _; _, True }}
     ) -∗
 
-    BEWP e1 ≤ e2 <|[]|> {{ _; _, True }}.
+    BREL e1 ≤ e2 <|[]|> {{ _; _, True }}.
   Proof.
     iIntros (??) "Hmain". rewrite /e1 /e2. clear e1 e2.
-    iApply bewp_effect_l.
+    iApply brel_effect_l.
     iIntros "!> %fork Hfork !>". simpl.
 
-    bewp_pures_r.
+    brel_pures_r.
 
     iApply queue_create_spec.
     iIntros "!> %s Hs". simpl.
 
-    bewp_pures_l.
+    brel_pures_l.
 
-    iApply bewp_new_theory.
-    iApply (bewp_add_label_l with "Hfork").
+    iApply brel_new_theory.
+    iApply (brel_add_label_l with "Hfork").
 
-    iApply (bewp_wand' _ _ _ (λ _ _, postInv s [])%I); first auto.
+    iApply (brel_wand' _ _ _ (λ _ _, postInv s [])%I); first auto.
     iApply (run_refines with "[Hmain]"); last
     by rewrite preInv_unfold /preInv_pre; auto.
 
     iApply "Hmain".
     iIntros "!> %task1 %task2 Htask".
 
-    bewp_pures_l.
-    bewp_pures_r.
+    brel_pures_l.
+    brel_pures_r.
 
     by iApply fork_refines.
   Qed.

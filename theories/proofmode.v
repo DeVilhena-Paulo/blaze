@@ -355,106 +355,106 @@ Proof.
   econstructor; last auto. apply pure_step_fill; auto.
 Qed.
 
-Class FinalizeBEWP `{!blazeGS Σ} (e1 e2 : expr) (L : iLblThy Σ) (R : val -d> val -d> iProp Σ) (P : iProp Σ) : Prop :=
-  { finalize_bewp : P ⊢ BEWP e1 ≤ e2 <|L|> {{R}} }.
-Global Hint Mode FinalizeBEWP + + ! + ! ! - : typeclass_instances.
+Class FinalizeBREL `{!blazeGS Σ} (e1 e2 : expr) (L : iLblThy Σ) (R : val -d> val -d> iProp Σ) (P : iProp Σ) : Prop :=
+  { finalize_brel : P ⊢ BREL e1 ≤ e2 <|L|> {{R}} }.
+Global Hint Mode FinalizeBREL + + ! + ! ! - : typeclass_instances.
 
 (** There are three ways to finalize a SIM.
     First of all, if both expressions are a value
     and the postcondition already contains a update,
     we can just prove the postcondition. *)
-Lemma finalize_bewp_value `{!blazeGS Σ} L R e1 e2 v1 v2 :
+Lemma finalize_brel_value `{!blazeGS Σ} L R e1 e2 v1 v2 :
   IntoVal e1 v1 → IntoVal e2 v2 →
-  FinalizeBEWP e1 e2 L R (R v1 v2).
-Proof. intros <- <-. constructor. apply bewp_value. Qed.
-Global Hint Extern 0 (FinalizeBEWP _ _ _ (λ _ _, |==> _)%I _) =>
-  notypeclasses refine (finalize_bewp_value _ _ _ _ _ _ _ _) : typeclass_instances.
+  FinalizeBREL e1 e2 L R (R v1 v2).
+Proof. intros <- <-. constructor. apply brel_value. Qed.
+Global Hint Extern 0 (FinalizeBREL _ _ _ (λ _ _, |==> _)%I _) =>
+  notypeclasses refine (finalize_brel_value _ _ _ _ _ _ _ _) : typeclass_instances.
 
 (** Second, if both expressions are a value
     but the postcondition does NOT already contain an update,
     we introduce it. *)
-Global Instance finalize_bewp_value_upd `{!blazeGS Σ} L R e1 e2 v1 v2 :
+Global Instance finalize_brel_value_upd `{!blazeGS Σ} L R e1 e2 v1 v2 :
   IntoVal e1 v1 → IntoVal e2 v2 →
-  FinalizeBEWP e1 e2 L R (|==> R v1 v2) | 1.
-Proof. intros <- <-. constructor. rewrite -fupd_bewp -bewp_value. by iIntros "?". Qed.
+  FinalizeBREL e1 e2 L R (|==> R v1 v2) | 1.
+Proof. intros <- <-. constructor. rewrite -fupd_brel -brel_value. by iIntros "?". Qed.
 
 (** Finally, if the expressions aren't both a value,
     we simplify them both. *)
-Global Instance finalize_bewp_simpl `{!blazeGS Σ} L R e1 e2 e1' e2' :
+Global Instance finalize_brel_simpl `{!blazeGS Σ} L R e1 e2 e1' e2' :
   TCSimplExpr e1 e1' → TCSimplExpr e2 e2' →
-  FinalizeBEWP e1 e2 L R (bewp e1' e2' L R) | 2.
+  FinalizeBREL e1 e2 L R (brel e1' e2' L R) | 2.
 Proof. intros ->%TCSimplExpr_eq ->%TCSimplExpr_eq. by constructor. Qed.
 
-(** [NormalizeBEWP] transforms a goal [P] into another goal of the form [bewp (fill K1 e1) (fill K2 e2) L R]
+(** [NormalizeBREL] transforms a goal [P] into another goal of the form [brel (fill K1 e1) (fill K2 e2) L R]
     by performing pure steps. This typeclass is used by [iApply]/[iAssumption] to first perform
     some pure steps, and automatically pick to right evaluation context to apply the lemma.
 
-    Note that [normalize_bewp_step] only performs pure steps without side-conditions,
-    so in some situations it's still needed to first perform the pure steps using [bewp_pures]. *)
-Class NormalizeBEWP `{!blazeGS Σ} (P : iProp Σ) (K1 K2 : ectx) (e1 e2 : expr) (L : iLblThy Σ) (R : val -d> val -d> iProp Σ) :=
-  { normalize_bewp : BEWP fill K1 e1 ≤ fill K2 e2 <|L|> {{R}} ⊢ P }.
-Global Hint Mode NormalizeBEWP + + ! - - - - - - : typeclass_instances.
+    Note that [normalize_brel_step] only performs pure steps without side-conditions,
+    so in some situations it's still needed to first perform the pure steps using [brel_pures]. *)
+Class NormalizeBREL `{!blazeGS Σ} (P : iProp Σ) (K1 K2 : ectx) (e1 e2 : expr) (L : iLblThy Σ) (R : val -d> val -d> iProp Σ) :=
+  { normalize_brel : BREL fill K1 e1 ≤ fill K2 e2 <|L|> {{R}} ⊢ P }.
+Global Hint Mode NormalizeBREL + + ! - - - - - - : typeclass_instances.
 
-Global Instance normalize_bewp_here `{!blazeGS Σ} e1 e2 L R :
-  NormalizeBEWP (bewp e1 e2 L R) [] [] e1 e2 L R | 0.
+Global Instance normalize_brel_here `{!blazeGS Σ} e1 e2 L R :
+  NormalizeBREL (brel e1 e2 L R) [] [] e1 e2 L R | 0.
 Proof. by split. Qed.
 
-Global Instance normalize_bewp_value `{!blazeGS Σ} v1 v2 K1 K2 e1 e2 e1' e2' L R R' :
+Global Instance normalize_brel_value `{!blazeGS Σ} v1 v2 K1 K2 e1 e2 e1' e2' L R R' :
   IntoVal e1' v1 → IntoVal e2' v2 →
-  NormalizeBEWP (R v1 v2) K1 K2 e1 e2 L R' →
-  NormalizeBEWP (bewp e1' e2' L R) K1 K2 e1 e2 L R' | 1.
+  NormalizeBREL (R v1 v2) K1 K2 e1 e2 L R' →
+  NormalizeBREL (brel e1' e2' L R) K1 K2 e1 e2 L R' | 1.
 Proof.
-  intros Hₜ Hₛ [HR]. split. by rewrite HR -Hₜ -Hₛ -bewp_value.
+  intros Hₜ Hₛ [HR]. split. by rewrite HR -Hₜ -Hₛ -brel_value.
 Qed.
 
-(** We only perform pure steps without a side-condition here. We could let [NormalizeBEWP]
+(** We only perform pure steps without a side-condition here. We could let [NormalizeBREL]
     also generate side-conditions, but [IntoWand]/[FromAssumption] currently lack the ability
     to handle pure side-conditions. *)
-Global Instance normalize_bewp_step `{!blazeGS Σ} n1 n2 e1 e1' e2 e2' K1 K2 L R :
+Global Instance normalize_brel_step `{!blazeGS Σ} n1 n2 e1 e1' e2 e2' K1 K2 L R :
   DoPureStepsIntoCtx True e1 (TCEq e1') n1 K1 →
   DoPureStepsIntoCtx True e2 (TCEq e2') n2 K2 →
-  NormalizeBEWP (bewp e1 e2 L R) K1 K2 e1' e2' L R | 10.
+  NormalizeBREL (brel e1 e2 L R) K1 K2 e1' e2' L R | 10.
 Proof.
   intros [? H1 [? -> <-]] [? H2 [? -> <-]]. split.
   assert (PureExec True n1 e1 (fill K1 e1')).
   { intros _. by apply H1. }
   assert (PureExec True n2 e2 (fill K2 e2')).
   { intros _. by apply H2. }
-  rewrite -bewp_pure_step_later // -bewp_pure_step_r //.
+  rewrite -brel_pure_step_later // -brel_pure_step_r //.
   rewrite -bi.laterN_intro. apply bi.wand_intro_r, bi.sep_elim_l. tc_solve.
 Qed.
 
-Global Instance from_assumption_bewp `{!blazeGS Σ} p K1 K2 e1 e2 e1' e2' L R R' :
-  NormalizeBEWP (bewp e1 e2 L R) K1 K2 e1' e2' L R' →
-  FromAssumption p (bewp (fill K1 e1') (fill K2 e2') L R') (bewp e1 e2 L R) | 2.
+Global Instance from_assumption_brel `{!blazeGS Σ} p K1 K2 e1 e2 e1' e2' L R R' :
+  NormalizeBREL (brel e1 e2 L R) K1 K2 e1' e2' L R' →
+  FromAssumption p (brel (fill K1 e1') (fill K2 e2') L R') (brel e1 e2 L R) | 2.
 Proof.
   intros [HR].
   rewrite /FromAssumption bi.intuitionistically_if_elim. by rewrite HR.
 Qed.
 
-Global Instance into_wand_bewp `{!blazeGS Σ} p e1 e2 K1 K2 e1' e2' L R R' S Q :
-  NormalizeBEWP (bewp e1 e2 L R) K1 K2 e1' e2' L R' →
+Global Instance into_wand_brel `{!blazeGS Σ} p e1 e2 K1 K2 e1' e2' L R R' S Q :
+  NormalizeBREL (brel e1 e2 L R) K1 K2 e1' e2' L R' →
   TCSimpl (□ (∀ v1 v2, S v1 v2 -∗ R' v1 v2))%I Q →
-  IntoWand p false (bewp (fill K1 e1') (fill K2 e2') L S) Q (bewp e1 e2 L R) | 1.
+  IntoWand p false (brel (fill K1 e1') (fill K2 e2') L S) Q (brel e1 e2 L R) | 1.
 Proof.
-  intros [Hbewp] <-%TCSimpl_eq.
+  intros [Hbrel] <-%TCSimpl_eq.
   rewrite /IntoWand /= bi.intuitionistically_if_elim.
-  rewrite -Hbewp. iIntros "H ?".
-  by iApply (bewp_wand with "H").
+  rewrite -Hbrel. iIntros "H ?".
+  by iApply (brel_wand with "H").
 Qed.
 
 (** This instance should not be needed, but is a workaround for
 https://gitlab.mpi-sws.org/iris/iris/-/issues/458 *)
-Global Instance into_wand_wand_bewp `{!blazeGS Σ} p q e1 e2 K1 K2 e1' e2' P P' Q L R R' :
-  NormalizeBEWP (bewp e1 e2 L R) K1 K2 e1' e2' L R' →
+Global Instance into_wand_wand_brel `{!blazeGS Σ} p q e1 e2 K1 K2 e1' e2' P P' Q L R R' :
+  NormalizeBREL (brel e1 e2 L R) K1 K2 e1' e2' L R' →
   FromAssumption q P P' →
   TCSimpl P Q →
-  IntoWand p q (P' -∗ BEWP fill K1 e1' ≤ fill K2 e2' <|L|> {{R'}}) Q (bewp e1 e2 L R).
+  IntoWand p q (P' -∗ BREL fill K1 e1' ≤ fill K2 e2' <|L|> {{R'}}) Q (brel e1 e2 L R).
 Proof.
   rewrite /FromAssumption /IntoWand.
-  intros [Hbewp] ? <-%TCSimpl_eq.
+  intros [Hbrel] ? <-%TCSimpl_eq.
   rewrite bi.intuitionistically_if_elim.
-  apply bi.wand_mono; [done|]. by rewrite Hbewp.
+  apply bi.wand_mono; [done|]. by rewrite Hbrel.
 Qed.
 
 Class IsAppRec (v1 v2 : val) (f x : binder) (e' : expr) (e : expr) := {
@@ -467,336 +467,336 @@ Global Instance is_app_rec v1 v2 f x e :
   IsAppRec v1 v2 f x e (App (Val v1) (Val v2)).
 Proof. rewrite TCEq_eq=> ->. by constructor. Qed.
 
-Section bewp_lemmas.
+Section brel_lemmas.
   Context `{!blazeGS Σ}.
 
-  Lemma tac_bewp_pure_l {Δ Δ' eₜ eₜ' eₛ L R Q φ} n :
+  Lemma tac_brel_pure_l {Δ Δ' eₜ eₜ' eₛ L R Q φ} n :
     DoPureSteps φ n eₜ eₜ' →
     φ →
     MaybeIntoLaterNEnvs n Δ Δ' →
-    FinalizeBEWP eₜ' eₛ L R Q →
+    FinalizeBREL eₜ' eₛ L R Q →
     envs_entails Δ' Q →
-    envs_entails Δ (bewp eₜ eₛ L R).
+    envs_entails Δ (brel eₜ eₛ L R).
   Proof.
     rewrite envs_entails_unseal=> -[Hsteps] Hφ HΔ [HQ] HΔ'.
     rewrite into_laterN_env_sound HΔ' HQ {HQ HΔ HΔ'}.
     assert (PureExec φ n eₜ eₜ') by by rewrite /PureExec.
-    rewrite -bewp_pure_step_later //.
+    rewrite -brel_pure_step_later //.
     apply bi.laterN_mono. auto.
   Qed.
 
-  Lemma tac_bewp_pure_r {Δ eₜ eₛ eₛ' L R Q φ} n :
+  Lemma tac_brel_pure_r {Δ eₜ eₛ eₛ' L R Q φ} n :
     DoPureSteps φ n eₛ eₛ' →
     φ →
-    FinalizeBEWP eₜ eₛ' L R Q →
+    FinalizeBREL eₜ eₛ' L R Q →
     envs_entails Δ Q →
-    envs_entails Δ (bewp eₜ eₛ L R).
+    envs_entails Δ (brel eₜ eₛ L R).
   Proof.
     rewrite envs_entails_unseal=> -[Hsteps] Hφ [HQ] HΔ.
     rewrite HΔ HQ.
     assert (PureExec φ n eₛ eₛ') by by rewrite /PureExec.
-    by apply: bewp_pure_step_r.
+    by apply: brel_pure_step_r.
   Qed.
 
-  Lemma tac_bewp_rec_l {Δ Δ' eₜ eₜ' v1 v2 f x eₛ K L R Q} :
+  Lemma tac_brel_rec_l {Δ Δ' eₜ eₜ' v1 v2 f x eₛ K L R Q} :
     IntoCtx eₜ (IsAppRec v1 v2 f x eₜ') K →
     MaybeIntoLaterNEnvs 1 Δ Δ' →
-    FinalizeBEWP (fill K (val_subst' x v2 (val_subst' f v1 eₜ'))) eₛ L R Q →
+    FinalizeBREL (fill K (val_subst' x v2 (val_subst' f v1 eₜ'))) eₛ L R Q →
     envs_entails Δ' Q →
-    envs_entails Δ (bewp eₜ eₛ L R).
+    envs_entails Δ (brel eₜ eₛ L R).
   Proof.
     rewrite envs_entails_unseal=> -[? -> [-> ->]] HΔ [HQ] HΔ'.
     rewrite into_laterN_env_sound HΔ' HQ /=.
     assert (PureExec True 1 (fill K ((rec: f x := eₜ')%V v2)) (fill K (val_subst' x v2 (val_subst' f (rec: f x := eₜ') eₜ')))).
     { apply pure_exec_fill. apply _. }
-    rewrite -bewp_pure_step_later //.
+    rewrite -brel_pure_step_later //.
     apply bi.later_mono. auto.
   Qed.
 
-  Lemma tac_bewp_rec_r {Δ eₜ v1 v2 f x eₛ eₛ' K L R Q} :
+  Lemma tac_brel_rec_r {Δ eₜ v1 v2 f x eₛ eₛ' K L R Q} :
     IntoCtx eₛ (IsAppRec v1 v2 f x eₛ') K →
-    FinalizeBEWP eₜ (fill K (val_subst' x v2 (val_subst' f v1 eₛ'))) L R Q →
+    FinalizeBREL eₜ (fill K (val_subst' x v2 (val_subst' f v1 eₛ'))) L R Q →
     envs_entails Δ Q →
-    envs_entails Δ (bewp eₜ eₛ L R).
+    envs_entails Δ (brel eₜ eₛ L R).
   Proof.
     rewrite envs_entails_unseal=> -[? -> [-> ->]] [HQ] HΔ.
     rewrite HΔ HQ /=.
     assert (PureExec True 1 (fill K ((rec: f x := eₛ')%V v2)) (fill K (val_subst' x v2 (val_subst' f (rec: f x := eₛ') eₛ')))).
     { apply pure_exec_fill. apply _. }
-    by eapply bewp_pure_step_r.
+    by eapply brel_pure_step_r.
   Qed.
-End bewp_lemmas.
+End brel_lemmas.
 
-Tactic Notation "bewp_pures_l" open_constr(n) :=
+Tactic Notation "brel_pures_l" open_constr(n) :=
   iStartProof;
   lazymatch goal with
-  | |- environments.envs_entails _ (bewp _ _ _ _) =>
-    notypeclasses refine (tac_bewp_pure_l n _ _ _ _ _);
-      [ tc_solve || fail 1 "bewp_pures_l: no pure steps can be performed"
+  | |- environments.envs_entails _ (brel _ _ _ _) =>
+    notypeclasses refine (tac_brel_pure_l n _ _ _ _ _);
+      [ tc_solve || fail 1 "brel_pures_l: no pure steps can be performed"
       | try done (* side-condition *)
       | tc_solve (* into later *)
       | tc_solve (* simpl *)
       | pm_prettify ]
-  | |- _ => fail "bewp_pures_l: goal not a `bewp`"
+  | |- _ => fail "brel_pures_l: goal not a `brel`"
   end.
-Tactic Notation "bewp_pure_l" := bewp_pures_l 1.
-Tactic Notation "bewp_pures_l" := bewp_pures_l (S _).
+Tactic Notation "brel_pure_l" := brel_pures_l 1.
+Tactic Notation "brel_pures_l" := brel_pures_l (S _).
 
-Tactic Notation "bewp_pures_r" open_constr(n) :=
+Tactic Notation "brel_pures_r" open_constr(n) :=
   iStartProof;
   lazymatch goal with
-  | |- environments.envs_entails _ (bewp _ _ _ _) =>
-    notypeclasses refine (tac_bewp_pure_r n _ _ _ _);
-      [ tc_solve || fail 1 "bewp_pures_r: no pure steps can be performed"
+  | |- environments.envs_entails _ (brel _ _ _ _) =>
+    notypeclasses refine (tac_brel_pure_r n _ _ _ _);
+      [ tc_solve || fail 1 "brel_pures_r: no pure steps can be performed"
       | try done (* side-condition *)
       | tc_solve (* simpl *)
       | pm_prettify]
-  | |- _ => fail "bewp_pures_r: goal not a `bewp`"
+  | |- _ => fail "brel_pures_r: goal not a `brel`"
   end.
-Tactic Notation "bewp_pure_r" := bewp_pures_r 1.
-Tactic Notation "bewp_pures_r" := bewp_pures_r (S _).
+Tactic Notation "brel_pure_r" := brel_pures_r 1.
+Tactic Notation "brel_pures_r" := brel_pures_r (S _).
 
-Tactic Notation "bewp_rec_l" :=
+Tactic Notation "brel_rec_l" :=
   iStartProof;
   lazymatch goal with
-  | |- environments.envs_entails _ (bewp _ _ _ _) =>
-    notypeclasses refine (tac_bewp_rec_l _ _ _ _);
-      [ tc_solve || fail 1 "bewp_rec_l: no beta reduction step can be performed"
+  | |- environments.envs_entails _ (brel _ _ _ _) =>
+    notypeclasses refine (tac_brel_rec_l _ _ _ _);
+      [ tc_solve || fail 1 "brel_rec_l: no beta reduction step can be performed"
       | tc_solve (* into laters *)
       | tc_solve (* simpl *)
       | pm_prettify]
-  | |- _ => fail 1 "bewp_rec_l: goal not a `bewp`"
+  | |- _ => fail 1 "brel_rec_l: goal not a `brel`"
   end.
 
-Tactic Notation "bewp_rec_r" :=
+Tactic Notation "brel_rec_r" :=
   iStartProof;
   lazymatch goal with
-  | |- environments.envs_entails _ (bewp _ _ _ _) =>
-    notypeclasses refine (tac_bewp_rec_r _ _ _);
-      [ tc_solve || fail 1 "bewp_rec_r: no beta reduction step can be performed"
+  | |- environments.envs_entails _ (brel _ _ _ _) =>
+    notypeclasses refine (tac_brel_rec_r _ _ _);
+      [ tc_solve || fail 1 "brel_rec_r: no beta reduction step can be performed"
       | tc_solve (* simpl *)
       | pm_prettify]
-  | |- _ => fail 1 "bewp_rec_r: goal not a `bewp`"
+  | |- _ => fail 1 "brel_rec_r: goal not a `brel`"
   end.
 
-Class FinalizeEWP `{!blazeGS Σ} (e1 e2 : expr) (X : iThy Σ) (R : val -d> val -d> iProp Σ) (P : iProp Σ) : Prop :=
-  { finalize_ewp : P ⊢ EWP e1 ≤ e2 <|X|> {{R}} }.
-Global Hint Mode FinalizeEWP + + ! + ! ! - : typeclass_instances.
+Class FinalizeREL `{!blazeGS Σ} (e1 e2 : expr) (X : iThy Σ) (R : val -d> val -d> iProp Σ) (P : iProp Σ) : Prop :=
+  { finalize_rel : P ⊢ REL e1 ≤ e2 <|X|> {{R}} }.
+Global Hint Mode FinalizeREL + + ! + ! ! - : typeclass_instances.
 
 (** There are three ways to finalize a SIM.
     First of all, if both expressions are a value
     and the postcondition already contains a update,
     we can just prove the postcondition. *)
-Lemma finalize_ewp_value `{!blazeGS Σ} X R e1 e2 v1 v2 :
+Lemma finalize_rel_value `{!blazeGS Σ} X R e1 e2 v1 v2 :
   IntoVal e1 v1 → IntoVal e2 v2 →
-  FinalizeEWP e1 e2 X R (R v1 v2).
-Proof. intros <- <-. constructor. iApply ewp_value. Qed.
-Global Hint Extern 0 (FinalizeEWP _ _ _ (λ _ _, |==> _)%I _) =>
-  notypeclasses refine (finalize_ewp_value _ _ _ _ _ _ _ _) : typeclass_instances.
+  FinalizeREL e1 e2 X R (R v1 v2).
+Proof. intros <- <-. constructor. iApply rel_value. Qed.
+Global Hint Extern 0 (FinalizeREL _ _ _ (λ _ _, |==> _)%I _) =>
+  notypeclasses refine (finalize_rel_value _ _ _ _ _ _ _ _) : typeclass_instances.
 
 (** Second, if both expressions are a value
     but the postcondition does NOT already contain an update,
     we introduce it. *)
-Global Instance finalize_ewp_value_upd `{!blazeGS Σ} X R e1 e2 v1 v2 :
+Global Instance finalize_rel_value_upd `{!blazeGS Σ} X R e1 e2 v1 v2 :
   IntoVal e1 v1 → IntoVal e2 v2 →
-  FinalizeEWP e1 e2 X R (|==> R v1 v2) | 1.
-Proof. intros <- <-. constructor. rewrite -fupd_ewp -ewp_value. by iIntros "?". Qed.
+  FinalizeREL e1 e2 X R (|==> R v1 v2) | 1.
+Proof. intros <- <-. constructor. rewrite -fupd_rel -rel_value. by iIntros "?". Qed.
 
 (** Finally, if the expressions aren't both a value,
     we simplify them both. *)
-Global Instance finalize_ewp_simpl `{!blazeGS Σ} X R e1 e2 e1' e2' :
+Global Instance finalize_rel_simpl `{!blazeGS Σ} X R e1 e2 e1' e2' :
   TCSimplExpr e1 e1' → TCSimplExpr e2 e2' →
-  FinalizeEWP e1 e2 X R (ewp ⊤ e1' e2' X R) | 2.
+  FinalizeREL e1 e2 X R (rel ⊤ e1' e2' X R) | 2.
 Proof. intros ->%TCSimplExpr_eq ->%TCSimplExpr_eq. by constructor. Qed.
 
-(** [NormalizeEWP] transforms a goal [P] into another goal of the form [ewp (fill K1 e1) (fill K2 e2) X R]
+(** [NormalizeREL] transforms a goal [P] into another goal of the form [rel (fill K1 e1) (fill K2 e2) X R]
     by performing pure steps. This typeclass is used by [iApply]/[iAssumption] to first perform
     some pure steps, and automatically pick to right evaluation context to apply the lemma.
 
-    Note that [normalize_ewp_step] only performs pure steps without side-conditions,
-    so in some situations it's still needed to first perform the pure steps using [ewp_pures]. *)
-Class NormalizeEWP `{!blazeGS Σ} (P : iProp Σ) (K1 K2 : ectx) (e1 e2 : expr) (X : iThy Σ) (R : val -d> val -d> iProp Σ) :=
-  { normalize_ewp : EWP fill K1 e1 ≤ fill K2 e2 <|X|> {{R}} ⊢ P }.
-Global Hint Mode NormalizeEWP + + ! - - - - - - : typeclass_instances.
+    Note that [normalize_rel_step] only performs pure steps without side-conditions,
+    so in some situations it's still needed to first perform the pure steps using [rel_pures]. *)
+Class NormalizeREL `{!blazeGS Σ} (P : iProp Σ) (K1 K2 : ectx) (e1 e2 : expr) (X : iThy Σ) (R : val -d> val -d> iProp Σ) :=
+  { normalize_rel : REL fill K1 e1 ≤ fill K2 e2 <|X|> {{R}} ⊢ P }.
+Global Hint Mode NormalizeREL + + ! - - - - - - : typeclass_instances.
 
-Global Instance normalize_ewp_here `{!blazeGS Σ} e1 e2 X R :
-  NormalizeEWP (ewp ⊤ e1 e2 X R) [] [] e1 e2 X R | 0.
+Global Instance normalize_rel_here `{!blazeGS Σ} e1 e2 X R :
+  NormalizeREL (rel ⊤ e1 e2 X R) [] [] e1 e2 X R | 0.
 Proof. by split. Qed.
 
-Global Instance normalize_ewp_value `{!blazeGS Σ} v1 v2 K1 K2 e1 e2 e1' e2' X R R' :
+Global Instance normalize_rel_value `{!blazeGS Σ} v1 v2 K1 K2 e1 e2 e1' e2' X R R' :
   IntoVal e1' v1 → IntoVal e2' v2 →
-  NormalizeEWP (R v1 v2) K1 K2 e1 e2 X R' →
-  NormalizeEWP (ewp ⊤ e1' e2' X R) K1 K2 e1 e2 X R' | 1.
+  NormalizeREL (R v1 v2) K1 K2 e1 e2 X R' →
+  NormalizeREL (rel ⊤ e1' e2' X R) K1 K2 e1 e2 X R' | 1.
 Proof.
-  intros Hₜ Hₛ [HR]. split. by rewrite HR -Hₜ -Hₛ -ewp_value.
+  intros Hₜ Hₛ [HR]. split. by rewrite HR -Hₜ -Hₛ -rel_value.
 Qed.
 
-(** We only perform pure steps without a side-condition here. We could let [NormalizeEWP]
+(** We only perform pure steps without a side-condition here. We could let [NormalizeREL]
     also generate side-conditions, but [IntoWand]/[FromAssumption] currently lack the ability
     to handle pure side-conditions. *)
-Global Instance normalize_ewp_step `{!blazeGS Σ} n1 n2 e1 e1' e2 e2' K1 K2 X R :
+Global Instance normalize_rel_step `{!blazeGS Σ} n1 n2 e1 e1' e2 e2' K1 K2 X R :
   DoPureStepsIntoCtx True e1 (TCEq e1') n1 K1 →
   DoPureStepsIntoCtx True e2 (TCEq e2') n2 K2 →
-  NormalizeEWP (ewp ⊤ e1 e2 X R) K1 K2 e1' e2' X R | 10.
+  NormalizeREL (rel ⊤ e1 e2 X R) K1 K2 e1' e2' X R | 10.
 Proof.
   intros [? H1 [? -> <-]] [? H2 [? -> <-]]. split.
   assert (PureExec True n1 e1 (fill K1 e1')).
   { intros _. by apply H1. }
   assert (PureExec True n2 e2 (fill K2 e2')).
   { intros _. by apply H2. }
-  rewrite -ewp_pure_step_l' // -ewp_pure_step_r' //.
+  rewrite -rel_pure_step_l' // -rel_pure_step_r' //.
   rewrite -bi.laterN_intro. apply bi.wand_intro_r, bi.sep_elim_l. tc_solve.
 Qed.
 
-Global Instance from_assumption_ewp `{!blazeGS Σ} p K1 K2 e1 e2 e1' e2' X R R' :
-  NormalizeEWP (ewp ⊤ e1 e2 X R) K1 K2 e1' e2' X R' →
-  FromAssumption p (ewp ⊤ (fill K1 e1') (fill K2 e2') X R') (ewp ⊤ e1 e2 X R) | 2.
+Global Instance from_assumption_rel `{!blazeGS Σ} p K1 K2 e1 e2 e1' e2' X R R' :
+  NormalizeREL (rel ⊤ e1 e2 X R) K1 K2 e1' e2' X R' →
+  FromAssumption p (rel ⊤ (fill K1 e1') (fill K2 e2') X R') (rel ⊤ e1 e2 X R) | 2.
 Proof.
   intros [HR].
   rewrite /FromAssumption bi.intuitionistically_if_elim. by rewrite HR.
 Qed.
 
-Global Instance into_wand_ewp `{!blazeGS Σ} p e1 e2 K1 K2 e1' e2' X R R' S Q :
-  NormalizeEWP (ewp ⊤ e1 e2 X R) K1 K2 e1' e2' X R' →
+Global Instance into_wand_rel `{!blazeGS Σ} p e1 e2 K1 K2 e1' e2' X R R' S Q :
+  NormalizeREL (rel ⊤ e1 e2 X R) K1 K2 e1' e2' X R' →
   TCSimpl (□ (∀ v1 v2, S v1 v2 -∗ R' v1 v2))%I Q →
-  IntoWand p false (ewp ⊤ (fill K1 e1') (fill K2 e2') X S) Q (ewp ⊤ e1 e2 X R) | 1.
+  IntoWand p false (rel ⊤ (fill K1 e1') (fill K2 e2') X S) Q (rel ⊤ e1 e2 X R) | 1.
 Proof.
-  intros [Hewp] <-%TCSimpl_eq.
+  intros [Hrel] <-%TCSimpl_eq.
   rewrite /IntoWand /= bi.intuitionistically_if_elim.
-  rewrite -Hewp. iIntros "H ?".
-  by iApply (ewp_wand with "H").
+  rewrite -Hrel. iIntros "H ?".
+  by iApply (rel_wand with "H").
 Qed.
 
 (** This instance should not be needed, but is a workaround for
 https://gitlab.mpi-sws.org/iris/iris/-/issues/458 *)
-Global Instance into_wand_wand_ewp `{!blazeGS Σ} p q e1 e2 K1 K2 e1' e2' P P' Q X R R' :
-  NormalizeEWP (ewp ⊤ e1 e2 X R) K1 K2 e1' e2' X R' →
+Global Instance into_wand_wand_rel `{!blazeGS Σ} p q e1 e2 K1 K2 e1' e2' P P' Q X R R' :
+  NormalizeREL (rel ⊤ e1 e2 X R) K1 K2 e1' e2' X R' →
   FromAssumption q P P' →
   TCSimpl P Q →
-  IntoWand p q (P' -∗ EWP fill K1 e1' ≤ fill K2 e2' <|X|> {{R'}}) Q (ewp ⊤ e1 e2 X R).
+  IntoWand p q (P' -∗ REL fill K1 e1' ≤ fill K2 e2' <|X|> {{R'}}) Q (rel ⊤ e1 e2 X R).
 Proof.
   rewrite /FromAssumption /IntoWand.
-  intros [Hewp] ? <-%TCSimpl_eq.
+  intros [Hrel] ? <-%TCSimpl_eq.
   rewrite bi.intuitionistically_if_elim.
-  apply bi.wand_mono; [done|]. by rewrite Hewp.
+  apply bi.wand_mono; [done|]. by rewrite Hrel.
 Qed.
 
 
-Section ewp_lemmas.
+Section rel_lemmas.
   Context `{!blazeGS Σ}.
 
-  Lemma tac_ewp_pure_l {Δ Δ' eₜ eₜ' eₛ X R Q φ} n :
+  Lemma tac_rel_pure_l {Δ Δ' eₜ eₜ' eₛ X R Q φ} n :
     DoPureSteps φ n eₜ eₜ' →
     φ →
     MaybeIntoLaterNEnvs n Δ Δ' →
-    FinalizeEWP eₜ' eₛ X R Q →
+    FinalizeREL eₜ' eₛ X R Q →
     envs_entails Δ' Q →
-    envs_entails Δ (ewp ⊤ eₜ eₛ X R).
+    envs_entails Δ (rel ⊤ eₜ eₛ X R).
   Proof.
     rewrite envs_entails_unseal=> -[Hsteps] Hφ HΔ [HQ] HΔ'.
     rewrite into_laterN_env_sound HΔ' HQ {HQ HΔ HΔ'}.
     assert (PureExec φ n eₜ eₜ') by by rewrite /PureExec.
-    rewrite -ewp_pure_step_l' //.
+    rewrite -rel_pure_step_l' //.
     apply bi.laterN_mono. auto.
   Qed.
 
-  Lemma tac_ewp_pure_r {Δ eₜ eₛ eₛ' X R Q φ} n :
+  Lemma tac_rel_pure_r {Δ eₜ eₛ eₛ' X R Q φ} n :
     DoPureSteps φ n eₛ eₛ' →
     φ →
-    FinalizeEWP eₜ eₛ' X R Q →
+    FinalizeREL eₜ eₛ' X R Q →
     envs_entails Δ Q →
-    envs_entails Δ (ewp ⊤ eₜ eₛ X R).
+    envs_entails Δ (rel ⊤ eₜ eₛ X R).
   Proof.
     rewrite envs_entails_unseal=> -[Hsteps] Hφ [HQ] HΔ.
     rewrite HΔ HQ.
     assert (PureExec φ n eₛ eₛ') by by rewrite /PureExec.
-    by apply: ewp_pure_step_r'.
+    by apply: rel_pure_step_r'.
   Qed.
 
-  Lemma tac_ewp_rec_l {Δ Δ' eₜ eₜ' v1 v2 f x eₛ K L R Q} :
+  Lemma tac_rel_rec_l {Δ Δ' eₜ eₜ' v1 v2 f x eₛ K L R Q} :
     IntoCtx eₜ (IsAppRec v1 v2 f x eₜ') K →
     MaybeIntoLaterNEnvs 1 Δ Δ' →
-    FinalizeEWP (fill K (val_subst' x v2 (val_subst' f v1 eₜ'))) eₛ L R Q →
+    FinalizeREL (fill K (val_subst' x v2 (val_subst' f v1 eₜ'))) eₛ L R Q →
     envs_entails Δ' Q →
-    envs_entails Δ (ewp ⊤ eₜ eₛ L R).
+    envs_entails Δ (rel ⊤ eₜ eₛ L R).
   Proof.
     rewrite envs_entails_unseal=> -[? -> [-> ->]] HΔ [HQ] HΔ'.
     rewrite into_laterN_env_sound HΔ' HQ /=.
     assert (PureExec True 1 (fill K ((rec: f x := eₜ')%V v2)) (fill K (val_subst' x v2 (val_subst' f (rec: f x := eₜ') eₜ')))).
     { apply pure_exec_fill. apply _. }
-    rewrite -ewp_pure_step_l' //.
+    rewrite -rel_pure_step_l' //.
     apply bi.later_mono. auto.
   Qed.
 
-  Lemma tac_ewp_rec_r {Δ eₜ v1 v2 f x eₛ eₛ' K L R Q} :
+  Lemma tac_rel_rec_r {Δ eₜ v1 v2 f x eₛ eₛ' K L R Q} :
     IntoCtx eₛ (IsAppRec v1 v2 f x eₛ') K →
-    FinalizeEWP eₜ (fill K (val_subst' x v2 (val_subst' f v1 eₛ'))) L R Q →
+    FinalizeREL eₜ (fill K (val_subst' x v2 (val_subst' f v1 eₛ'))) L R Q →
     envs_entails Δ Q →
-    envs_entails Δ (ewp ⊤ eₜ eₛ L R).
+    envs_entails Δ (rel ⊤ eₜ eₛ L R).
   Proof.
     rewrite envs_entails_unseal=> -[? -> [-> ->]] [HQ] HΔ.
     rewrite HΔ HQ /=.
     assert (PureExec True 1 (fill K ((rec: f x := eₛ')%V v2)) (fill K (val_subst' x v2 (val_subst' f (rec: f x := eₛ') eₛ')))).
     { apply pure_exec_fill. apply _. }
-    by eapply ewp_pure_step_r'.
+    by eapply rel_pure_step_r'.
   Qed.
-End ewp_lemmas.
+End rel_lemmas.
 
-Tactic Notation "ewp_pures_l" open_constr(n) :=
+Tactic Notation "rel_pures_l" open_constr(n) :=
   iStartProof;
   lazymatch goal with
-  | |- environments.envs_entails _ (ewp _ _ _ _ _) =>
-    notypeclasses refine (tac_ewp_pure_l n _ _ _ _ _);
-      [ tc_solve || fail 1 "ewp_pures_l: no pure steps can be performed"
+  | |- environments.envs_entails _ (rel _ _ _ _ _) =>
+    notypeclasses refine (tac_rel_pure_l n _ _ _ _ _);
+      [ tc_solve || fail 1 "rel_pures_l: no pure steps can be performed"
       | try done (* side-condition *)
       | tc_solve (* into later *)
       | tc_solve (* simpl *)
       | pm_prettify ]
-  | |- _ => fail "ewp_pures_l: goal not a `ewp`"
+  | |- _ => fail "rel_pures_l: goal not a `rel`"
   end.
-Tactic Notation "ewp_pure_l" := ewp_pures_l 1.
-Tactic Notation "ewp_pures_l" := ewp_pures_l (S _).
+Tactic Notation "rel_pure_l" := rel_pures_l 1.
+Tactic Notation "rel_pures_l" := rel_pures_l (S _).
 
-Tactic Notation "ewp_pures_r" open_constr(n) :=
+Tactic Notation "rel_pures_r" open_constr(n) :=
   iStartProof;
   lazymatch goal with
-  | |- environments.envs_entails _ (ewp _ _ _ _ _) =>
-    notypeclasses refine (tac_ewp_pure_r n _ _ _ _);
-      [ tc_solve || fail 1 "ewp_pures_r: no pure steps can be performed"
+  | |- environments.envs_entails _ (rel _ _ _ _ _) =>
+    notypeclasses refine (tac_rel_pure_r n _ _ _ _);
+      [ tc_solve || fail 1 "rel_pures_r: no pure steps can be performed"
       | try done (* side-condition *)
       | tc_solve (* simpl *)
       | pm_prettify]
-  | |- _ => fail "ewp_pures_r: goal not a `ewp`"
+  | |- _ => fail "rel_pures_r: goal not a `rel`"
   end.
-Tactic Notation "ewp_pure_r" := ewp_pures_r 1.
-Tactic Notation "ewp_pures_r" := ewp_pures_r (S _).
+Tactic Notation "rel_pure_r" := rel_pures_r 1.
+Tactic Notation "rel_pures_r" := rel_pures_r (S _).
 
-Tactic Notation "ewp_rec_l" :=
+Tactic Notation "rel_rec_l" :=
   iStartProof;
   lazymatch goal with
-  | |- environments.envs_entails _ (ewp _ _ _ _ _) =>
-    notypeclasses refine (tac_ewp_rec_l _ _ _ _);
-      [ tc_solve || fail 1 "ewp_rec_l: no beta reduction step can be performed"
+  | |- environments.envs_entails _ (rel _ _ _ _ _) =>
+    notypeclasses refine (tac_rel_rec_l _ _ _ _);
+      [ tc_solve || fail 1 "rel_rec_l: no beta reduction step can be performed"
       | tc_solve (* into laters *)
       | tc_solve (* simpl *)
       | pm_prettify]
-  | |- _ => fail 1 "ewp_rec_l: goal not a `ewp`"
+  | |- _ => fail 1 "rel_rec_l: goal not a `rel`"
   end.
 
-Tactic Notation "ewp_rec_r" :=
+Tactic Notation "rel_rec_r" :=
   iStartProof;
   lazymatch goal with
-  | |- environments.envs_entails _ (ewp _ _ _ _ _) =>
-    notypeclasses refine (tac_ewp_rec_r _ _ _);
-      [ tc_solve || fail 1 "ewp_rec_r: no beta reduction step can be performed"
+  | |- environments.envs_entails _ (rel _ _ _ _ _) =>
+    notypeclasses refine (tac_rel_rec_r _ _ _);
+      [ tc_solve || fail 1 "rel_rec_r: no beta reduction step can be performed"
       | tc_solve (* simpl *)
       | pm_prettify]
-  | |- _ => fail 1 "ewp_rec_r: goal not a `ewp`"
+  | |- _ => fail 1 "rel_rec_r: goal not a `rel`"
   end.
 
-Class FinalizeWP `{!blazeGS Σ} (e : expr) (R : val -d> iProp Σ) (P : iProp Σ) : Prop :=
+Class Finalizrel `{!blazeGS Σ} (e : expr) (R : val -d> iProp Σ) (P : iProp Σ) : Prop :=
   { finalize_wp : P ⊢ WP e {{R}} }.
-Global Hint Mode FinalizeWP + + ! ! - : typeclass_instances.
+Global Hint Mode Finalizrel + + ! ! - : typeclass_instances.
 
 (** There are three ways to finalize a SIM.
     First of all, if both expressions are a value
@@ -804,9 +804,9 @@ Global Hint Mode FinalizeWP + + ! ! - : typeclass_instances.
     we can just prove the postcondition. *)
 Lemma finalize_wp_value `{!blazeGS Σ} R e v :
   IntoVal e v →
-  FinalizeWP e R (R v).
+  Finalizrel e R (R v).
 Proof. intros <-. constructor. iApply wp_value. Qed.
-Global Hint Extern 0 (FinalizeWP _ _ _ (λ _ _, |==> _)%I _) =>
+Global Hint Extern 0 (Finalizrel _ _ _ (λ _ _, |==> _)%I _) =>
   notypeclasses refine (finalize_wp_value _ _ _ _ _ _ _ _) : typeclass_instances.
 
 (** Second, if both expressions are a value
@@ -814,43 +814,43 @@ Global Hint Extern 0 (FinalizeWP _ _ _ (λ _ _, |==> _)%I _) =>
     we introduce it. *)
 Global Instance finalize_wp_value_upd `{!blazeGS Σ} R e v :
   IntoVal e v →
-  FinalizeWP e R (|==> R v) | 1.
+  Finalizrel e R (|==> R v) | 1.
 Proof. intros <-. constructor. rewrite -fupd_wp -wp_value. by iIntros "?". Qed.
 
 (** Finally, if the expressions aren't both a value,
     we simplify them both. *)
 Global Instance finalize_wp_simpl `{!blazeGS Σ} R e e' :
-  TCSimplExpr e e' → FinalizeWP e R (WP e' {{R}})%I | 2.
+  TCSimplExpr e e' → Finalizrel e R (WP e' {{R}})%I | 2.
 Proof. intros ->%TCSimplExpr_eq. by constructor. Qed.
 
-(** [NormalizeWP] transforms a goal [P] into another goal of the form [wp (fill K1 e1) (fill K2 e2) X R]
+(** [Normalizrel] transforms a goal [P] into another goal of the form [wp (fill K1 e1) (fill K2 e2) X R]
     by performing pure steps. This typeclass is used by [iApply]/[iAssumption] to first perform
     some pure steps, and automatically pick to right evaluation context to apply the lemma.
 
     Note that [normalize_wp_step] only performs pure steps without side-conditions,
     so in some situations it's still needed to first perform the pure steps using [wp_pures]. *)
-Class NormalizeWP `{!blazeGS Σ} (P : iProp Σ) (K : ectx) (e : expr) (R : val -d> iProp Σ) :=
+Class Normalizrel `{!blazeGS Σ} (P : iProp Σ) (K : ectx) (e : expr) (R : val -d> iProp Σ) :=
   { normalize_wp : WP fill K e {{R}} ⊢ P }.
-Global Hint Mode NormalizeWP + + ! - - - : typeclass_instances.
+Global Hint Mode Normalizrel + + ! - - - : typeclass_instances.
 
 Global Instance normalize_wp_here `{!blazeGS Σ} e R :
-  NormalizeWP (WP e {{R}})%I [] e R | 0.
+  Normalizrel (WP e {{R}})%I [] e R | 0.
 Proof. by split. Qed.
 
 Global Instance normalize_wp_value `{!blazeGS Σ} v K e e' R R' :
   IntoVal e' v →
-  NormalizeWP (R v) K e R' →
-  NormalizeWP (WP e' {{R}})%I K e R' | 1.
+  Normalizrel (R v) K e R' →
+  Normalizrel (WP e' {{R}})%I K e R' | 1.
 Proof.
   intros Hₜ [HR]. split. by rewrite HR -Hₜ  -wp_value.
 Qed.
 
-(** We only perform pure steps without a side-condition here. We could let [NormalizeWP]
+(** We only perform pure steps without a side-condition here. We could let [Normalizrel]
     also generate side-conditions, but [IntoWand]/[FromAssumption] currently lack the ability
     to handle pure side-conditions. *)
 Global Instance normalize_wp_step `{!blazeGS Σ} n e e' K R :
   DoPureStepsIntoCtx True e (TCEq e') n K →
-  NormalizeWP (WP e {{R}})%I K e' R | 10.
+  Normalizrel (WP e {{R}})%I K e' R | 10.
 Proof.
   intros [? H [? -> <-]]. split.
   assert (PureExec True n e (fill K e')).
@@ -860,7 +860,7 @@ Proof.
 Qed.
 
 Global Instance from_assumption_wp `{!blazeGS Σ} p K e e' R R' :
-  NormalizeWP (WP e {{R}})%I K e' R' →
+  Normalizrel (WP e {{R}})%I K e' R' →
   FromAssumption p (WP (fill K e') {{R'}})%I (WP e {{R}})%I | 2.
 Proof.
   intros [HR].
@@ -868,7 +868,7 @@ Proof.
 Qed.
 
 Global Instance into_wand_wp `{!blazeGS Σ} p e K e' R R' S Q :
-  NormalizeWP (WP e {{R}})%I K e' R' →
+  Normalizrel (WP e {{R}})%I K e' R' →
   TCSimpl (∀ v, S v -∗ R' v)%I Q →
   IntoWand p false (WP (fill K e') {{S}})%I Q (WP e {{R}})%I | 1.
 Proof.
@@ -881,7 +881,7 @@ Qed.
 (** This instance should not be needed, but is a workaround for
 https://gitlab.mpi-sws.org/iris/iris/-/issues/458 *)
 Global Instance into_wand_wand_wp `{!blazeGS Σ} p q e K e' P P' Q R R' :
-  NormalizeWP (WP e {{R}})%I K e' R' →
+  Normalizrel (WP e {{R}})%I K e' R' →
   FromAssumption q P P' →
   TCSimpl P Q →
   IntoWand p q (P' -∗ WP fill K e' {{R'}})%I Q (WP e {{R}})%I.
@@ -900,7 +900,7 @@ Section wp_lemmas.
     DoPureSteps φ n e e' →
     φ →
     MaybeIntoLaterNEnvs n Δ Δ' →
-    FinalizeWP e' R Q →
+    Finalizrel e' R Q →
     envs_entails Δ' Q →
     envs_entails Δ (WP e {{R}})%I.
   Proof.
@@ -914,7 +914,7 @@ Section wp_lemmas.
   Lemma tac_wp_rec {Δ Δ' e' v1 v2 f x e K R Q} :
     IntoCtx e (IsAppRec v1 v2 f x e') K →
     MaybeIntoLaterNEnvs 1 Δ Δ' →
-    FinalizeWP (fill K (val_subst' x v2 (val_subst' f v1 e'))) R Q →
+    Finalizrel (fill K (val_subst' x v2 (val_subst' f v1 e'))) R Q →
     envs_entails Δ' Q →
     envs_entails Δ (WP e {{R}})%I.
   Proof.

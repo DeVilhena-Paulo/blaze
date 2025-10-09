@@ -34,38 +34,38 @@ Section verification.
   Next Obligation. solve_proper. Qed.
 
   Lemma run_ask_handler_refines (ask : label) (x : Z) L R e1 e2 :
-    BEWP e1 ≤ e2 <|([ask], [], AskT ask x) :: L|> {{R}} -∗
-    BEWP run_ask_handler ask e1 #x ≤ e2 <|([ask], [], iThyBot) :: L|> {{R}}.
+    BREL e1 ≤ e2 <|([ask], [], AskT ask x) :: L|> {{R}} -∗
+    BREL run_ask_handler ask e1 #x ≤ e2 <|([ask], [], iThyBot) :: L|> {{R}}.
   Proof.
     iLöb as "IH" forall (e1 e2).
     iIntros "He". rewrite /run_ask_handler.
-    iApply (bewp_exhaustion _ _ [_] with "He"); try done.
-    iSplit; [by iIntros "!> %% HR"; by bewp_pures_l|].
+    iApply (brel_exhaustion _ _ [_] with "He"); try done.
+    iSplit; [by iIntros "!> %% HR"; by brel_pures_l|].
     iIntros "!> %k1 %k2 %%% %Hk1 %Hk2 (-> & -> & #HQ) #Hk".
-    bewp_pures_l. { by apply Hk1; apply elem_of_list_singleton. }
+    brel_pures_l. { by apply Hk1; apply elem_of_list_singleton. }
     iApply "IH". by iApply "Hk".
   Qed.
 
   Lemma run_ask_refines (main1 main2 : val) (x : Z) L R :
     (∀ (ask1 ask2 : val) M,
-      □ BEWP ask1 #() ≤ ask2 #() <|M|> {{both_int x}} -∗
-      BEWP main1 ask1 ≤ main2 ask2 <|M ++ L|> {{R}}
+      □ BREL ask1 #() ≤ ask2 #() <|M|> {{both_int x}} -∗
+      BREL main1 ask1 ≤ main2 ask2 <|M ++ L|> {{R}}
     ) -∗
-    BEWP run_ask #x main1 ≤ main2 (λ: <>, #x) <|L|> {{R}}.
+    BREL run_ask #x main1 ≤ main2 (λ: <>, #x) <|L|> {{R}}.
   Proof.
     iIntros "Hmain".
-    rewrite /run_ask. bewp_pures_l. bewp_pures_r.
-    iApply bewp_new_theory.
-    iApply bewp_effect_l. iIntros "!> %ask Hask !>".
-    iApply (bewp_add_label_l with "Hask"). bewp_pures_l.
+    rewrite /run_ask. brel_pures_l. brel_pures_r.
+    iApply brel_new_theory.
+    iApply brel_effect_l. iIntros "!> %ask Hask !>".
+    iApply (brel_add_label_l with "Hask"). brel_pures_l.
     iApply run_ask_handler_refines.
     iApply ("Hmain" $! _ _ [([ask], [], AskT ask x)]).
-    iIntros "!>". bewp_pures_l. bewp_pures_r.
-    iApply bewp_introduction'. { apply elem_of_cons. by left. }
+    iIntros "!>". brel_pures_l. brel_pures_r.
+    iApply brel_introduction'. { apply elem_of_cons. by left. }
     iExists (do: ask #())%E, #x, [], [], _.
     do 2 (iSplit; [done|]; iSplit; [iPureIntro; apply _|]).
     iSplit; [|by iIntros "!> %% H"; iApply "H"].
-    do 2 (iSplit; [done|]). by iModIntro; iApply bewp_value.
+    do 2 (iSplit; [done|]). by iModIntro; iApply brel_value.
   Qed.
 
 End verification.

@@ -1,8 +1,18 @@
 # `blaze`: A Relational Separation Logic for Effect Handlers
 
-## Structure
+This repository contains the Rocq formalisation of the paper
+*A Relational Separation Logic for Effect Handlers*.
 
-### Language (Section 3)
+To build the project, either automatically or manually,
+please follow the [installation instructions](https://github.com/DeVilhena-Paulo/blaze/tree/main?tab=readme-ov-file#installation)
+in this page.
+
+## Repository structure
+
+### Language
+
+These files contain the definition of the syntax and semantics
+of the `λ-blaze` defined in Section 3.
 
 * [syntax.v](/theories/syntax.v): Syntax of `lambda_blaze` (`λ-blaze` in the
   paper).
@@ -11,7 +21,11 @@
 * [iris_instantiation.v](/theories/iris_instantiation.v): Instantiation of
   `Iris` with `lambda_blaze`.
 
-### Logic (Section 4)
+### Logic
+
+These files contain the definition of the model and the statement
+and proof of the reasoning rules of the `blaze` and `baze` logics
+defined in Section 4.
 
 * [lifting.v](/theories/lifting.v): Lemmas about `Iris`'s `wp` needed in the
   proof of `baze`'s reasoning rules.
@@ -25,7 +39,10 @@
   Statement and proof of all reasoning rules.
 * [adequacy.v](/theories/adequacy.v): Proof of adequacy.
 
-### Case studies (Section 5 + Examples)
+### Case studies
+
+These files contain the case studies from Section 5 and
+various examples studied throughout the paper.
 
 * [countdown.v](/theories/examples/countdown.v): Example from Section 2
   whose verification in `baze` is explained in Section 4.1.
@@ -55,6 +72,13 @@
 
 
 ## Correspondence between paper and formalisation
+
+### Results
+
+|                               | Paper                   | `Rocq` formalisation         |
+|-------------------------------|-------------------------|------------------------------|
+
+### Notation
 
 |                               | Paper                   | `Rocq` formalisation         |
 |-------------------------------|-------------------------|------------------------------|
@@ -94,7 +118,8 @@ chmod +x ./setup.sh
 The script creates a *local opam switch* with correct versions of `Rocq`, `stdpp`,
 and `Iris` and compiles the project.
 
-**Note**: You need the `OCaml` package manager `opam` to run this command.
+**Note**: To run this command, you need
+[`opam`](https://opam.ocaml.org/doc/Install.html), the OCaml package manager.
 We have tested with version `2.3.0`.
 
 ### Manual
@@ -110,12 +135,10 @@ First, install a fresh *opam switch* (called *blaze* for example):
 opam switch create blaze ocaml-base-compiler.5.3.0
 ```
 
-Then, add the `Rocq`'s and `Iris`'s `opam` repositories:
+Then, add `Rocq`'s and `Iris`'s `opam` repositories:
 
 ```
 opam repo add coq-released https://coq.inria.fr/opam/released
-```
-```
 opam repo add iris-dev https://gitlab.mpi-sws.org/iris/opam.git
 ```
 
@@ -123,8 +146,6 @@ Finally, install `Rocq` and `Iris` with the following commands:
 
 ```
 opam install coq.8.20.1
-```
-```
 opam install coq-iris-heap-lang.dev.2025-05-13.0.9f18e97d`
 ```
 

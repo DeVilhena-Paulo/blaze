@@ -4,7 +4,7 @@ This repository contains the Rocq formalisation of the paper
 *A Relational Separation Logic for Effect Handlers*.
 
 To build the project, either automatically or manually,
-please follow the [installation instructions](https://github.com/DeVilhena-Paulo/blaze/tree/main?tab=readme-ov-file#installation)
+please follow the [installation instructions](#installation)
 in this page.
 
 ## Repository structure

@@ -215,7 +215,7 @@ Finally, install `Rocq` and `Iris` with the following commands:
 
 ```
 opam install coq.8.20.1
-opam install coq-iris-heap-lang.dev.2025-05-13.0.9f18e97d`
+opam install coq-iris-heap-lang.dev.2025-05-13.0.9f18e97d
 ```
 
 ### Troubleshooting

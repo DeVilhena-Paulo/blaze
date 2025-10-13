@@ -198,25 +198,28 @@ Alternatively, you can install `blaze`'s dependencies manually:
 - Rocq: `coq.8.20.1`
 - Iris: `coq-iris-heap-lang.dev.2025-05-13.0.9f18e97d`
 
-First, install a fresh *opam switch* (called *blaze* for example):
+**Step 1.** Install a fresh *opam switch* (called *blaze* for example):
 
 ```
 opam switch create blaze ocaml-base-compiler.5.3.0
 ```
 
-Then, add `Rocq`'s and `Iris`'s `opam` repositories:
+**Step 2.** Add `Rocq`'s and `Iris`'s `opam` repositories:
 
 ```
 opam repo add coq-released https://coq.inria.fr/opam/released
 opam repo add iris-dev https://gitlab.mpi-sws.org/iris/opam.git
 ```
 
-Finally, install `Rocq` and `Iris` with the following commands:
+**Step 3.** Install `Rocq` and `Iris` with the following commands:
 
 ```
 opam install coq.8.20.1
 opam install coq-iris-heap-lang.dev.2025-05-13.0.9f18e97d
 ```
+
+**Step 4.** Finally, run `make` to compile the proofs.
+
 
 ### Troubleshooting
 

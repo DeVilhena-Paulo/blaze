@@ -602,12 +602,7 @@ Section baze_rules.
   Qed.
 
   Lemma fupd_rel e1 e2 X R : (|={⊤}=> REL e1 ≤ e2 <|X|> {{R}}) ⊢ REL e1 ≤ e2 <|X|> {{R}}.
-  Proof.
-    rewrite !rel_unfold /rel_pre obs_refines_eq /obs_refines_def.
-    iIntros "Hrel %k1 %k2 %S Hkwp %j %k2' #Hspec Hj".
-    iApply fupd_wp. iMod "Hrel". iModIntro.
-    by iApply ("Hrel" with "Hkwp Hspec Hj").
-  Qed.
+  Proof. apply fupd_rel'. Qed.
 
   Lemma rel_introduction e1 e2 Q X R :
     X e1 e2 Q -∗

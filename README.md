@@ -233,3 +233,11 @@ opam repo remove iris-dev --all
 
 then try `./setup.sh` again. (You will later need to re-declare
 the `iris-dev` repository.)
+
+If you want to browse the proofs using RocqIDE, you might
+need to install and use a fresh copy of the IDE on the new opam
+switch. To install RocqIDE, it suffices to run:
+
+```
+opam install coqide.8.20.1
+```

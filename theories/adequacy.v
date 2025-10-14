@@ -55,3 +55,8 @@ Proof.
   - iApply valid_nil.
   - iPureIntro. apply distinct_nil.
 Qed.
+
+(* Uncomment the following lines to check that no axioms are used. (Both should
+   include the output 'Closed under the global context' at the end.) *)
+(* Print Assumptions rel_adequacy. *)
+(* Print Assumptions brel_adequacy. *)

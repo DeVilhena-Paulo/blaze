@@ -223,18 +223,19 @@ opam install coq-iris-heap-lang.dev.2025-05-13.0.9f18e97d
 
 ### Troubleshooting
 
-When running `./setup.sh`, `opam` may complain that the repository
-`iris-dev` already exists with a different URL. If this happens,
-please type
+**Conflicting `iris-dev`.** When running `./setup.sh`,
+`opam` may complain that the repository
+`iris-dev` already exists with a different URL.
+If this happens, please run
 
 ```
 opam repo remove iris-dev --all
 ```
 
-then try `./setup.sh` again. (You will later need to re-declare
+and then try `./setup.sh` again. (You will later need to re-declare
 the `iris-dev` repository.)
 
-If you want to browse the proofs using RocqIDE, you might
+**RocqIDE.** If you want to browse the proofs using RocqIDE, you might
 need to install and use a fresh copy of the IDE on the new opam
 switch. To install RocqIDE, it suffices to run:
 

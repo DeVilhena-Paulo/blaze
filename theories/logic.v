@@ -1052,8 +1052,6 @@ Section baze_rules.
     REL e1 ≤ e2' <|X|> {{R}} ⊢ REL e1 ≤ e2 <|X|> {{R}}.
   Proof. by intros ??; apply (rel_pure_step_r _ _ e2' _ φ n). Qed.
 
-
-
   Lemma rel_effect_l X k1 s1 e1 e2 R :
     ▷ (∀ l1, is_label (DfracOwn 1) l1 ==∗ REL fill k1 (lbl_subst s1 l1 e1) ≤ e2 <|X|> {{R}}) -∗
     REL fill k1 (Effect s1 e1) ≤ e2 <|X|> {{R}}.
@@ -2522,7 +2520,7 @@ Section blaze_rules.
     iIntros "Hinv". by iApply ("Hrel" with "Hinv").
   Qed.
 
-  Lemma brel_pure_step_later `{!blazeGS Σ} e1 e1' e2 φ n L R :
+  Lemma brel_pure_step_later e1 e1' e2 φ n L R :
     PureExec φ n e1 e1' →
     φ →
     ▷^n (£ n -∗ BREL e1' ≤ e2 <|L|> {{R}}) ⊢ BREL e1 ≤ e2 <|L|> {{R}}.
@@ -2533,15 +2531,22 @@ Section blaze_rules.
     iIntros "!> H". by iApply ("Hbrel" with "H").
   Qed.
 
-  Lemma brel_pure_step_r `{!blazeGS Σ} e1 e2 e2' φ n L R :
+  Lemma brel_pure_step_r_with_mask E e1 e2 e2' φ n L R :
+    ↑specN ⊆ E →
+    PureExec φ n e2 e2' →
+    φ →
+    BREL e1 ≤ e2' @ E <|L|> {{R}} ⊢ BREL e1 ≤ e2 @ E <|L|> {{R}}.
+  Proof.
+    iIntros (HE HPure Hφ) "Hbrel #Hvalid %Hdistinct".
+    iApply rel_pure_step_r_with_mask; try done.
+    by iApply "Hbrel".
+  Qed.
+
+  Lemma brel_pure_step_r e1 e2 e2' φ n L R :
     PureExec φ n e2 e2' →
     φ →
     BREL e1 ≤ e2' <|L|> {{R}} ⊢ BREL e1 ≤ e2 <|L|> {{R}}.
-  Proof.
-    iIntros (Hexec Hφ) "Hbrel #Hvalid %Hdistinct".
-    iApply (rel_pure_step_r _ _ e2' _ φ n). { done. }
-    by iApply "Hbrel".
-  Qed.
+  Proof. by apply brel_pure_step_r_with_mask. Qed.
 
 End blaze_rules.
 
@@ -2711,16 +2716,23 @@ Section blaze_rules_state_and_concurrency_rules.
     by iApply ("Hbrel" with "Hl").
   Qed.
 
+  Lemma brel_load_r_with_mask E L R e1 k2 l2 dq2 v2 :
+    ↑specN ⊆ E →
+    l2 ↦ₛ{dq2} v2 -∗
+    (l2 ↦ₛ{dq2} v2 -∗ BREL e1 ≤ fill k2 v2 @ E <|L|> {{R}}) -∗
+    BREL e1 ≤ fill k2 (! #l2) @ E <|L|> {{R}}.
+  Proof.
+    iIntros (HE) "Hl2 Hbrel #Hvalid %Hdistinct".
+    iApply (rel_load_r_with_mask with "Hl2"); first auto.
+    iIntros "Hl2".
+    iApply ("Hbrel" with "Hl2 [//] [//]").
+  Qed.
+
   Lemma brel_load_r L R e1 k2 l2 dq2 v2 :
     l2 ↦ₛ{dq2} v2 -∗
     (l2 ↦ₛ{dq2} v2 -∗ BREL e1 ≤ fill k2 v2 <|L|> {{R}}) -∗
     BREL e1 ≤ fill k2 (! #l2) <|L|> {{R}}.
-  Proof.
-    iIntros "Hl2 Hbrel #Hvalid %Hdistinct".
-    iApply (rel_load_r with "Hl2").
-    iIntros "Hl2".
-    iApply ("Hbrel" with "Hl2 [//] [//]").
-  Qed.
+  Proof. by apply brel_load_r_with_mask. Qed.
 
   Lemma brel_store_l L R k1 l1 v1 w1 e2 :
     ▷ l1 ↦ v1 -∗
@@ -2733,16 +2745,22 @@ Section blaze_rules_state_and_concurrency_rules.
     iApply ("Hbrel" with "Hl1 [//] [//]").
   Qed.
 
+  Lemma brel_store_r_with_mask E L R e1 k2 l2 v2 w2 :
+    nclose specN ⊆ E →
+    l2 ↦ₛ v2 -∗
+    (l2 ↦ₛ w2 -∗ BREL e1 ≤ fill k2 #() @ E <|L|> {{R}}) -∗
+    BREL e1 ≤ fill k2 (#l2 <- w2) @ E <|L|> {{R}}.
+  Proof.
+    iIntros (HE) "Hl2 Hbrel #Hvalid %Hdistinct".
+    iApply (rel_store_r_with_mask with "Hl2 [Hbrel]"); first done.
+    iIntros "Hl2". by iApply ("Hbrel" with "Hl2").
+  Qed.
+
   Lemma brel_store_r L R e1 k2 l2 v2 w2 :
     l2 ↦ₛ v2 -∗
     (l2 ↦ₛ w2 -∗ BREL e1 ≤ fill k2 #() <|L|> {{R}}) -∗
     BREL e1 ≤ fill k2 (#l2 <- w2) <|L|> {{R}}.
-  Proof.
-    iIntros "Hl2 Hbrel #Hvalid %Hdistinct".
-    iApply (rel_store_r with "Hl2").
-    iIntros "Hl2".
-    iApply ("Hbrel" with "Hl2 [//] [//]").
-  Qed.
+  Proof. by apply brel_store_r_with_mask. Qed.
 
   Lemma brel_xchg_l L R k1 l1 v1 w1 e2 :
     ▷ l1 ↦ v1 -∗

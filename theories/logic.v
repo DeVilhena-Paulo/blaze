@@ -1357,6 +1357,36 @@ Section baze_rules.
     iApply ("Hrel" with "Hl1 Hkwp Hspec Hj").
   Qed.
 
+  Lemma rel_store_l_inv' E X R k1 l1 w1 e2 :
+    (|={⊤,E}=> ∃ v1,
+      (▷ l1 ↦ v1) ∗
+      (▷ (l1 ↦ w1 -∗ REL fill k1 #() ≤ e2 @ E <|X|> {{R}}))
+    ) -∗
+    REL fill k1 (#l1 <- w1) ≤ e2 <|X|> {{R}}.
+  Proof.
+    iIntros "Hrel".
+    iApply (rel_atomic_l E). iMod "Hrel" as "[%v1 [Hl Hrel]]".
+    iModIntro.
+    iApply (wp_store [] with "Hl"). iNext. iIntros "Hl".
+    iApply wp_value. by iApply "Hrel".
+  Qed.
+
+  Lemma rel_store_l_inv N P k1 l1 (w1 : val) e2 X R :
+    inv N P -∗
+    (▷ P -∗ closeInv N P -∗
+     ∃ v1,
+     ▷ l1 ↦ v1 ∗
+     ▷ (l1 ↦ w1 -∗ (REL fill k1 #() ≤ e2 @ (⊤ ∖ ↑N) <|X|> {{R}}))) -∗
+    REL fill k1 (#l1 <- w1) ≤ e2 <|X|> {{R}}.
+  Proof.
+    iIntros "Hinv Hrel".
+    iApply (rel_store_l_inv' (⊤ ∖ ↑N) X R k1).
+    iMod (inv_acc with "Hinv") as "[HP Hclose]"; auto.
+    iModIntro.
+    iDestruct ("Hrel" with "HP Hclose") as "[%v' [Hl Hrel]]".
+    iExists v'. by iFrame.
+  Qed.
+
   Lemma rel_store_r_with_mask E X R e1 k2 l2 v2 w2 :
     nclose specN ⊆ E →
     l2 ↦ₛ v2 -∗
@@ -1620,9 +1650,9 @@ Section brel.
   (* Refinement relation in blaze. *)
 
   Definition brel :
-    expr -d> expr -d> iLblThy Σ -d> (val -d> val -d> iProp Σ) -d> iProp Σ
-  := (λ e1 e2 L R,
-    valid L -∗ distinct' L -∗ REL e1 ≤ e2 <|to_iThy L|> {{R}}
+    coPset -d> expr -d> expr -d> iLblThy Σ -d> (val -d> val -d> iProp Σ) -d> iProp Σ
+  := (λ E e1 e2 L R,
+    valid L -∗ distinct' L -∗ REL e1 ≤ e2 @ E <|to_iThy L|> {{R}}
   )%I.
 
   (* ----------------------------------------------------------------------- *)
@@ -1695,9 +1725,9 @@ Section brel.
   Proof. apply: ne_proper. Qed.
 
   (* brel. *)
-  Global Instance brel_ne e1 e2 : NonExpansive2 (brel e1 e2).
+  Global Instance brel_ne E e1 e2 : NonExpansive2 (brel E e1 e2).
   Proof. by intros n ?? H ?? H'; rewrite /brel H H'. Qed.
-  Global Instance brel_proper e1 e2 : Proper ((≡) ==> (≡) ==> (≡)) (brel e1 e2).
+  Global Instance brel_proper E e1 e2 : Proper ((≡) ==> (≡) ==> (≡)) (brel E e1 e2).
   Proof. apply: ne_proper_2. Qed.
 End brel.
 
@@ -1705,11 +1735,19 @@ End brel.
 (* ------------------------------------------------------------------------- *)
 (* Notation. *)
 
+Notation "'BREL' e1 ≤ e2 @ E <| L | > {{ R } }" :=
+  (brel E e1%E e2%E L%I R%I)
+  (at level 20, E, e1, e2, L, R at next level, only parsing) : bi_scope.
+Notation "'BREL' e1 ≤ e2 @ E  <| L | > {{ v1 ; v2 , Q } }" :=
+  (brel E e1%E e2%E L%I (λ v1 v2, Q)%I)
+  (at level 20, E, e1, e2, L, Q at next level,
+  format "'[hv' 'BREL'  e1  ≤  e2 @ E  '/' <| L | >  '/' {{  '[' v1  ;  v2 ,  '/' Q  ']' } } ']'") : bi_scope.
+
 Notation "'BREL' e1 ≤ e2 <| L | > {{ R } }" :=
-  (brel e1%E e2%E L%I R%I)
+  (brel ⊤ e1%E e2%E L%I R%I)
   (at level 20, e1, e2, L, R at next level, only parsing) : bi_scope.
 Notation "'BREL' e1 ≤ e2  <| L | > {{ v1 ; v2 , Q } }" :=
-  (brel e1%E e2%E L%I (λ v1 v2, Q)%I)
+  (brel ⊤ e1%E e2%E L%I (λ v1 v2, Q)%I)
   (at level 20, e1, e2, L, Q at next level,
   format "'[hv' 'BREL'  e1  ≤  e2  '/' <| L | >  '/' {{  '[' v1  ;  v2 ,  '/' Q  ']' } } ']'") : bi_scope.
 
@@ -2439,11 +2477,49 @@ Section blaze_rules.
     by iApply (brel_introduction _ _ _ Q with "HX"); last auto.
   Qed.
 
+  Lemma fupd_brel' E1 E2 e1 e2 L R :
+    (|={E1, E2}=> BREL e1 ≤ e2 @ E2 <|L|> {{R}}) ⊢ BREL e1 ≤ e2 @ E1 <|L|> {{R}}.
+  Proof.
+    iIntros "H #Hvalid %Hdistinct". iApply fupd_rel'.
+    iMod "H". iApply ("H" with "Hvalid [//]").
+  Qed.
+
   Lemma fupd_brel e1 e2 L R :
     (|={⊤}=> BREL e1 ≤ e2 <|L|> {{R}}) ⊢ BREL e1 ≤ e2 <|L|> {{R}}.
+  Proof. by apply fupd_brel'. Qed.
+
+  Lemma brel_atomic_l (E : coPset) K e1 e2 L R
+        (Hatomic : Atomic WeaklyAtomic e1) :
+   (|={⊤,E}=> WP e1 @ E {{ v,
+     BREL fill K (of_val v) ≤ e2 @ E <|L|> {{R}} }})%I -∗
+   BREL fill K e1 ≤ e2 <|L|> {{R}}.
   Proof.
-    iIntros "H #Hvalid %Hdistinct". iApply fupd_rel.
-    iMod "H". iApply ("H" with "Hvalid [//]").
+    iIntros "H #Hvalid %Hdistinct".
+    iApply (rel_atomic_l E).
+    iMod "H" as "H". iModIntro.
+    iApply (wp_wand with "H").
+    iIntros (v) "Hbrel". by iApply "Hbrel".
+  Qed.
+
+  Lemma brel_inv_restore N P e1 e2 L R :
+   closeInv N P -∗
+   ▷ P -∗
+   BREL e1 ≤ e2 <|L|> {{R}} -∗
+   BREL e1 ≤ e2 @ (⊤ ∖ ↑N) <|L|> {{R}}.
+  Proof.
+    iIntros "Hclose HP Hrel #Hvalid %Hdistinct".
+    iApply (rel_inv_restore with "Hclose HP").
+    by iApply "Hrel".
+  Qed.
+
+  Lemma brel_inv_alloc N P e1 e2 L R :
+   ▷ P -∗
+   (inv N P -∗ BREL e1 ≤ e2 <|L|> {{R}}) -∗
+   BREL e1 ≤ e2 <|L|> {{R}}.
+  Proof.
+    iIntros "HP Hrel #Hvalid %Hdistinct".
+    iApply (rel_inv_alloc N with "HP [Hrel]").
+    iIntros "Hinv". by iApply ("Hrel" with "Hinv").
   Qed.
 
   Lemma brel_pure_step_later `{!blazeGS Σ} e1 e1' e2 φ n L R :
@@ -2617,6 +2693,22 @@ Section blaze_rules_state_and_concurrency_rules.
     iApply (rel_load_l with "Hl1").
     iIntros "!> Hl1".
     iApply ("Hbrel" with "Hl1 [//] [//]").
+  Qed.
+
+  Lemma brel_load_l_inv N P K l q e2 L R :
+    inv N P -∗
+    (▷ P -∗ closeInv N P -∗
+     ∃ v',
+     ▷ l ↦{q} v' ∗
+     ▷ (l ↦{q} v' -∗ (BREL fill K (of_val v') ≤ e2 @ (⊤ ∖ ↑N) <|L|> {{R}}))) -∗
+    BREL fill K (! #l) ≤ e2 <|L|> {{R}}.
+  Proof.
+    iIntros "Hinv Hbrel #Hvalid %Hdistinct".
+    iApply (rel_load_l_inv with "Hinv [Hbrel]").
+    iIntros "HP Hclose".
+    iDestruct ("Hbrel" with "HP Hclose") as "[%v' [Hl Hbrel]]".
+    iExists (v'). iFrame. iIntros "!> Hl".
+    by iApply ("Hbrel" with "Hl").
   Qed.
 
   Lemma brel_load_r L R e1 k2 l2 dq2 v2 :

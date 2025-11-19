@@ -149,25 +149,26 @@ various examples studied throughout the paper.
 
 ### Notation
 
-|                               | Paper                   | `Rocq` formalisation         |
-|-------------------------------|-------------------------|------------------------------|
-| Empty protocol                | `⊥`                     | `iThyBot`                    |
-| Theory sum                    | `T ⊕ F`                 | `iThySum T F`               |
-| Ordering                      | `T ⊑ F`                 | `iThy_le T F`                |
-| Context-closure operator      | `(lsₗ, lsᵣ) ⥯ T`        | `iThyTraverse lsₗ lsᵣ T`     |
-| One-shot operator             | `◯ₘ T`                  | `iThyIfMono m T`            |
-| Traversable predicat          | `traversable(Kₗ, Kᵣ, T)` | `traversable Kₗ Kᵣ T`        |
-| Theory-list interpretation    | `interp(L)`              | `to_iThy L`                  |
-| Theory-list validity          | `valid(L)`               | `valid L ∗ distinct' L`      |
-| Theory-list one-shot operator | `◯ₘ L`                   | `to_iThyIfMono m T`         |
-| Context labels                | `ℒ(K)`                   | `ectx_labels K`              |
-| Labels                        | `labels_{i/s}`           | `labels_{l/r}`               |
-| Label predicate               | `label_{i/s}`            | `is_label`/`spec_label`      |
-| Ghost thread-pool resource    | `i ⤇ e`                  | `i ⤇ e`                     |
-| Observational refinement      | `𝒪(eₗ, eᵣ, S)`           | `obs_refines eₗ eᵣ S`        |
-| Validation of a theory        | `{R} Kₗ ≾ Kᵣ {S}`        | `kwp R Kₗ Kᵣ S`              |
-| Refinement in `baze`          | `eₗ ≾ eᵣ ⟨T⟩ {R}`        | `REL eₗ ≤ eᵣ <\|T\|> {{R}}`  |
-| Refinement in `blaze`         | `eₗ ≾_* eᵣ ⟨L⟩ {R}`      | `BREL eₗ ≤ eᵣ <\|L\|> {{R}}` |
+|                                       | Paper                     | `Rocq` formalisation                                         |
+|---------------------------------------|---------------------------|--------------------------------------------------------------|
+| Empty protocol                        | `⊥`                       | `iThyBot` ([logic.v](/theories/logic.v))                     |
+| Theory sum                            | `T ⊕ F`                   | `iThySum T F` ([logic.v](/theories/logic.v))                 |
+| Ordering                              | `T ⊑ F`                   | `iThy_le T F` ([logic.v](/theories/logic.v))                 |
+| Context-closure operator              | `(lsₗ, lsᵣ) ⥯ T`          | `iThyTraverse lsₗ lsᵣ T` ([logic.v](/theories/logic.v))     |
+| One-shot operator                     | `◯ₘ T`                   | `iThyIfMono m T` ([logic.v](/theories/logic.v))             |
+| Traversable predicat                  | `traversable(Kₗ, Kᵣ, T)`  | `traversable Kₗ Kᵣ T` ([logic.v](/theories/logic.v))       |
+| Theory-list interpretation            | `interp(L)`               | `to_iThy L` ([logic.v](/theories/logic.v))                  |
+| Theory-list validity                  | `valid(L)`                | `valid L ∗ distinct' L` ([logic.v](/theories/logic.v))      |
+| Theory-list one-shot operator         | `◯ₘ L`                   | `to_iThyIfMono m T` ([logic.v](/theories/logic.v))         |
+| Context labels                        | `ℒ(K)`                    | `ectx_labels K` ([semantics.v](/theories/semantics.v))      |
+| Labels                                | `labels_{i/s}`            | `labels_{l/r}` ([logic.v](/theories/logic.v))               |
+| Label predicate (implementation side) | `label_i`                 | `is_label` ([state_rules.v](/theories/state_rules.v))       |
+| Label predicate (specification side)  | `label_s`                 | `spec_label` ([spec_rules.v](/theories/spec_rules.v))       |
+| Ghost thread-pool resource            | `i ⤇ e`                  | `i ⤇ e` ([spec_rules.v](/theories/spec_rules.v))           |
+| Observational refinement              | `𝒪(eₗ, eᵣ, S)`           | `obs_refines eₗ eᵣ S` ([logic.v](/theories/logic.v))       |
+| Validation of a theory                | `{R} Kₗ ≾ Kᵣ {S}`        | `kwp R Kₗ Kᵣ S` ([logic.v](/theories/logic.v))              |
+| Refinement in `baze`                  | `eₗ ≾ eᵣ ⟨T⟩ {R}`        | `REL eₗ ≤ eᵣ <\|T\|> {{R}}` ([logic.v](/theories/logic.v))  |
+| Refinement in `blaze`                 | `eₗ ≾_* eᵣ ⟨L⟩ {R}`      | `BREL eₗ ≤ eᵣ <\|L\|> {{R}}` ([logic.v](/theories/logic.v)) |
 
 
 ## Installation

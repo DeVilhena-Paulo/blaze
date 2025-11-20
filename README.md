@@ -91,12 +91,26 @@ various examples studied throughout the paper.
 | Operational rules (Fig. 1.b) | Relations `base_step` and `prim_step` ([semantics.v](/theories/semantics.v)) |
 | Pure-reduction rules (Fig. 1.c) | Relation `pure_base_step` ([iris_instantiation.v](/theories/iris_instantiation.v)) |
 
+*Note.* The relation `pure_base_step` is a simplified version of Iris's
+[`pure_step`](https://gitlab.mpi-sws.org/iris/iris/-/blob/master/iris/program_logic/language.v#L224)
+relation. We define this custom pure-reduction relation, because most of the theorems in Iris
+about `pure_step` rely on the typeclass
+[`LanguageCtx`](https://gitlab.mpi-sws.org/iris/iris/-/blob/master/iris/program_logic/language.v#L46),
+which a language with non-local control effects such as `λ-blaze` does not satisfy.
+
 ### Model
 
 | Paper                   | `Rocq` formalisation                                                |
 |-------------------------|---------------------------------------------------------------------|
 | Model of `baze` (Fig. 2) | Definitions in section `rel` ([logic.v](/theories/logic.v)) |
 | Model of `blaze` (Fig. 4) | Definitions in section `brel` ([logic.v](/theories/logic.v)) |
+
+*Note.* The definition of `baze` (as explained in the paper) relies on the definitions of
+observational refinement (`𝒪(eₗ, eᵣ, S)`) and of validation of a theory by a pair of contexts
+(`{R} Kₗ ≾ Kᵣ {S}`). Observational refinement is captured by the definition `obs_refines` in Rocq
+and validation of a theory by a pair of contexts by `kwp`. Both definitions can be found in the
+section `rel` of [`logic.v`](/theories/logic.v).
+
 
 ### Rules
 
@@ -117,11 +131,11 @@ various examples studied throughout the paper.
 | Rule `Introduction-★` (Fig. 5) | Lemma `brel_introduction` ([logic.v](/theories/logic.v)) |
 | Rule `Exhaustion-★` (Fig. 5) | Lemma `brel_exhaustion` ([logic.v](/theories/logic.v)) |
 | Rule `Bind-★` (Fig. 5) | Lemma `brel_bind''` ([logic.v](/theories/logic.v)) |
-| Rule `Gen-Monotonicity` | Lemma `rel_mono` ([logic.v](/theories/logic.v)) |
-| Rule `Fork-L-★` | Lemma `brel_fork_l` ([logic.v](/theories/logic.v)) |
-| Rule `Fork-R-★` | Lemma `brel_fork_r` ([logic.v](/theories/logic.v)) |
-| Rule `Logical-Fork-★` | Lemma `brel_logical_fork` ([logic.v](/theories/logic.v)) |
-| Rule `Thread-Swap-★` | Lemma `brel_thread_swap` ([logic.v](/theories/logic.v)) |
+| Rule `Gen-Monotonicity` (§4.3) | Lemma `rel_mono` ([logic.v](/theories/logic.v)) |
+| Rule `Fork-L-★` (Fig. 7) | Lemma `brel_fork_l` ([logic.v](/theories/logic.v)) |
+| Rule `Fork-R-★` (Fig. 7) | Lemma `brel_fork_r` ([logic.v](/theories/logic.v)) |
+| Rule `Logical-Fork-★` (Fig. 7) | Lemma `brel_logical_fork` ([logic.v](/theories/logic.v)) |
+| Rule `Thread-Swap-★` (Fig. 7) | Lemma `brel_thread_swap` ([logic.v](/theories/logic.v)) |
 
 ### Adequacy
 
@@ -142,9 +156,9 @@ various examples studied throughout the paper.
 | `run_coop₂` (Fig. 9) | Definition `run_coop₂` ([async_await.v](/theories/examples/async_await.v)) |
 | _"`run_coop₃ deadlock` diverges"_ (§5.1.3) | Lemma `main_diverges_toplevel_alt` ([divergence.v](/theories/examples/divergence.v)) |
 | _"`run_coop₁ deadlock` terminates"_ (§5.1.3) | Execution of [termination.ml](/src/termination.ml) |
-| `Nd` | Definition `Nd` ([non_determinism.v](/theories/non_determinism.v)) |
-| _"`runNdCorrect(run_nd_pure)` holds"_ | Lemma `ndet_run_pure_correct` ([non_determinism.v](/theories/non_determinism.v)) |
-| _"`runNdCorrect(run_nd_rand)` holds"_ | Lemma `ndet_run_rand_correct` ([non_determinism.v](/theories/non_determinism.v)) |
+| `Nd` (§5.2) | Definition `Nd` ([non_determinism.v](/theories/non_determinism.v)) |
+| _"`runNdCorrect(run_nd_pure)` holds"_ (§5.2) | Lemma `ndet_run_pure_correct` ([non_determinism.v](/theories/non_determinism.v)) |
+| _"`runNdCorrect(run_nd_rand)` holds"_ (§5.2) | Lemma `ndet_run_rand_correct` ([non_determinism.v](/theories/non_determinism.v)) |
 
 
 ### Notation

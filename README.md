@@ -105,7 +105,7 @@ which a language with non-local control effects such as `λ-blaze` does not sati
 | Model of `baze` (Fig. 2) | Definitions in section `rel` ([logic.v](/theories/logic.v)) |
 | Model of `blaze` (Fig. 4) | Definitions in section `brel` ([logic.v](/theories/logic.v)) |
 
-*Note.* The definition of `baze` (as explained in the paper) relies on the definitions of
+*Note.* The model of `baze` (as explained in the paper) relies on the definitions of
 observational refinement (`𝒪(eₗ, eᵣ, S)`) and of validation of a theory by a pair of contexts
 (`{R} Kₗ ≾ Kᵣ {S}`). Observational refinement is captured by the definition `obs_refines` in Rocq
 and validation of a theory by a pair of contexts by `kwp`. Both definitions can be found in the
